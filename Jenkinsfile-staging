@@ -1,0 +1,285 @@
+pipeline {
+    agent any
+
+    options {
+        timeout(time: 60, unit: 'MINUTES')
+        timestamps()
+        buildDiscarder(logRotator(numToKeepStr: '20'))
+    }
+
+    parameters {
+        string(name: 'IMAGE_TAG',   defaultValue: 'staging-latest', description: 'Image tag a desplegar (ej: staging-a3f9c12)')
+        string(name: 'ENVIRONMENT', defaultValue: 'staging',        description: 'Ambiente destino')
+    }
+
+    environment {
+        GCP_PROJECT      = 'ingesoft-v'
+        GKE_CLUSTER      = 'circleguard-stage'
+        GKE_ZONE         = 'us-east1-b'
+        ACR_REGISTRY     = 'cgregistry.azurecr.io'
+        NAMESPACE        = 'circleguard-stage'
+        K8S_DIR          = 'k8s/services/stage'
+        INFRA_DIR        = 'k8s/infra'
+        SERVICES         = 'auth-service identity-service promotion-service gateway-service notification-service form-service'
+        ROLLOUT_TIMEOUT  = '600'
+    }
+
+    stages {
+
+        // ── Stage 1: Autenticar en GCP y configurar kubectl ──────────────────────
+        stage('GCloud Auth & Kubectl Config') {
+            steps {
+                withCredentials([file(credentialsId: 'gcp-service-account-key', variable: 'GCLOUD_KEY')]) {
+                    sh '''
+                        gcloud auth activate-service-account --key-file=$GCLOUD_KEY
+                        gcloud config set project $GCP_PROJECT
+                        gcloud container clusters get-credentials $GKE_CLUSTER \
+                            --zone $GKE_ZONE \
+                            --project $GCP_PROJECT
+
+                        echo "==> Verificando conexión al cluster..."
+                        kubectl config current-context
+                        kubectl get nodes
+                    '''
+                }
+            }
+        }
+
+        // ── Stage 2: Crear/verificar namespace (idempotente) ────────────────────
+        stage('Create Namespace') {
+            steps {
+                sh '''
+                    echo "==> Creando namespace $NAMESPACE si no existe (idempotente)..."
+                    kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+                    kubectl apply -f k8s/namespaces/circleguard-stage.yml
+                    echo "==> Namespace $NAMESPACE listo"
+                '''
+            }
+        }
+
+        // ── Stage 3: Desplegar middleware ────────────────────────────────────────
+        stage('Deploy Infrastructure (Middleware)') {
+            steps {
+                sh '''
+                    echo "==> Aplicando manifiestos de infraestructura en $NAMESPACE..."
+                    kubectl apply -f $INFRA_DIR/ -n $NAMESPACE
+
+                    echo "==> Esperando que Postgres esté listo..."
+                    kubectl rollout status statefulset/postgres -n $NAMESPACE --timeout=180s
+
+                    echo "==> Esperando que Redis esté listo..."
+                    kubectl rollout status deployment/redis -n $NAMESPACE --timeout=60s
+
+                    echo "==> Esperando que Kafka esté listo..."
+                    kubectl rollout status deployment/kafka-broker -n $NAMESPACE --timeout=180s
+
+                    echo "==> Esperando que Neo4j esté listo..."
+                    kubectl rollout status deployment/neo4j -n $NAMESPACE --timeout=180s
+
+                    echo "==> Esperando que OpenLDAP esté listo..."
+                    kubectl rollout status deployment/openldap -n $NAMESPACE --timeout=60s
+
+                    echo "==> Middleware listo en $NAMESPACE"
+                '''
+            }
+        }
+
+        // ── Stage 4: Aplicar ConfigMaps ──────────────────────────────────────────
+        stage('Apply ConfigMaps') {
+            steps {
+                sh 'kubectl apply -f k8s/configmaps/configmap-infra.yml'
+            }
+        }
+
+        // ── Stage 5: Aplicar Sealed Secrets ─────────────────────────────────────
+        stage('Apply Sealed Secrets') {
+            steps {
+                sh 'kubectl apply -f k8s/secrets/sealed-secret-stage.yml'
+            }
+        }
+
+        // ── Stage 6: Validar manifests (client-side, no requiere API server live) ─
+        stage('Validate Manifests (dry-run)') {
+            steps {
+                sh '''
+                    echo "==> Validando manifiestos para staging (namespace: $NAMESPACE)..."
+                    kubectl apply -f $K8S_DIR/all-services.yml \
+                        --dry-run=client \
+                        --namespace=$NAMESPACE
+                    echo "==> Validación exitosa"
+                '''
+            }
+        }
+
+        // ── Stage 7: Actualizar image tags ───────────────────────────────────────
+        stage('Update Image Tags') {
+            steps {
+                sh '''
+                    for SERVICE in $SERVICES; do
+                        bash scripts/update-image-tag.sh \
+                            $K8S_DIR/all-services.yml \
+                            $ACR_REGISTRY/circleguard/circleguard-${SERVICE} \
+                            $IMAGE_TAG
+                    done
+                    echo "==> Image tags actualizados a $IMAGE_TAG en $K8S_DIR/all-services.yml"
+                '''
+            }
+        }
+
+        // ── Stage 8: Reset Stage DB (schema limpio para Flyway migrations) ───────
+        stage('Reset Stage DB') {
+            steps {
+                sh '''
+                    echo "==> Recreando databases de staging para fresh Flyway migrations..."
+                    kubectl exec -n $NAMESPACE postgres-0 -- psql -U admin -d postgres \
+                        -c "DROP DATABASE IF EXISTS circleguard_auth WITH (FORCE);" \
+                        -c "CREATE DATABASE circleguard_auth;" \
+                        -c "DROP DATABASE IF EXISTS circleguard_identity WITH (FORCE);" \
+                        -c "CREATE DATABASE circleguard_identity;" \
+                        -c "DROP DATABASE IF EXISTS circleguard_form WITH (FORCE);" \
+                        -c "CREATE DATABASE circleguard_form;" \
+                        -c "DROP DATABASE IF EXISTS circleguard_promotion WITH (FORCE);" \
+                        -c "CREATE DATABASE circleguard_promotion;" \
+                        -c "DROP DATABASE IF EXISTS circleguard_gateway WITH (FORCE);" \
+                        -c "CREATE DATABASE circleguard_gateway;"
+                    echo "==> Databases recreadas correctamente"
+                '''
+            }
+        }
+
+        // ── Stage 9: Desplegar servicios ─────────────────────────────────────────
+        stage('Deploy Services') {
+            steps {
+                sh '''
+                    echo "==> Desplegando servicios en $NAMESPACE con tag $IMAGE_TAG..."
+                    kubectl apply -f $K8S_DIR/all-services.yml -n $NAMESPACE
+                    kubectl apply -f $K8S_DIR/ingress.yml -n $NAMESPACE
+                    kubectl apply -f k8s/cert-manager/clusterissuer.yml
+                '''
+            }
+        }
+
+        // ── Stage 10: Verificar rollout + auto-rollback ───────────────────────────
+        stage('Rollout Verification') {
+            steps {
+                script {
+                    def servicesList = env.SERVICES.tokenize(' ')
+                    def failed = []
+
+                    for (int i = 0; i < servicesList.size(); i++) {
+                        def svc = servicesList[i]
+                        // Restart fuerza el pick-up del nuevo image tag
+                        sh "kubectl rollout restart deployment/${svc} -n ${env.NAMESPACE}"
+                        def result = sh(
+                            script: "kubectl rollout status deployment/${svc} -n ${env.NAMESPACE} --timeout=${env.ROLLOUT_TIMEOUT}s",
+                            returnStatus: true
+                        )
+                        if (result != 0) {
+                            echo "==> ROLLBACK: deployment/${svc} falló — revertiendo..."
+                            sh "kubectl rollout undo deployment/${svc} -n ${env.NAMESPACE}"
+                            failed.add(svc)
+                        } else {
+                            echo "==> OK: deployment/${svc} desplegado correctamente"
+                        }
+                    }
+
+                    if (!failed.isEmpty()) {
+                        error("Rollout fallido para: ${failed.join(', ')} — rollback automático aplicado")
+                    }
+                }
+            }
+        }
+
+        // ── Stage 11: Health Check del Gateway ───────────────────────────────────
+        stage('Health Check') {
+            steps {
+                script {
+                    def ip = sh(
+                        script: "kubectl get svc gateway-service -n ${env.NAMESPACE} -o jsonpath='{.status.loadBalancer.ingress[0].ip}'",
+                        returnStdout: true
+                    ).trim()
+
+                    if (!ip) {
+                        error("No se pudo obtener la IP del LoadBalancer de gateway-service en ${env.NAMESPACE}")
+                    }
+
+                    env.GATEWAY_IP = ip
+                    echo "==> Gateway LoadBalancer IP: ${ip}"
+                    echo "==> Esperando 90s para que Spring Boot inicialice completamente..."
+                    sleep 90
+
+                    def healthy = false
+                    for (int i = 1; i <= 24; i++) {
+                        def status = sh(
+                            script: "curl -sf --max-time 10 http://${ip}:8087/actuator/health || echo 'FAIL'",
+                            returnStatus: true
+                        )
+                        if (status == 0) {
+                            echo "==> Health check exitoso en intento ${i}/24"
+                            healthy = true
+                            break
+                        }
+                        echo "==> Intento ${i}/24 fallido — esperando 15s..."
+                        sleep 15
+                    }
+
+                    if (!healthy) {
+                        error("Health check fallido tras 24 intentos. Gateway no responde en http://${ip}:8087/actuator/health")
+                    }
+                }
+            }
+        }
+
+        // ── Stage 12: Resumen del despliegue (archivado) ──────────────────────────
+        stage('Deployment Summary') {
+            steps {
+                script {
+                    def servicesList = env.SERVICES.tokenize(' ')
+                    def imageLines = ''
+                    for (int i = 0; i < servicesList.size(); i++) {
+                        imageLines += "  - ${ACR_REGISTRY}/circleguard/circleguard-${servicesList[i]}:${params.IMAGE_TAG}\n"
+                    }
+
+                    def summary = """\
+Deployment Summary — STAGING
+=============================
+Environment:  ${params.ENVIRONMENT}
+Namespace:    ${env.NAMESPACE}
+Image tag:    ${params.IMAGE_TAG}
+Timestamp:    ${new Date().format('yyyy-MM-dd HH:mm:ss')} UTC
+Gateway URL:  http://${env.GATEWAY_IP}:8087
+Gateway HTTPS: https://api-stage.circleguard.edu
+
+Services deployed:
+${imageLines}
+Jenkins build: ${env.BUILD_URL}
+"""
+                    writeFile file: 'deployment-summary.txt', text: summary
+                    echo summary
+                    sh 'kubectl get pods -n $NAMESPACE'
+                    sh 'kubectl get hpa -n $NAMESPACE || true'
+                }
+                archiveArtifacts artifacts: 'deployment-summary.txt'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "==> Deploy a STAGING exitoso — Gateway: http://${env.GATEWAY_IP ?: 'N/A'}:8087 | Image: ${params.IMAGE_TAG}"
+        }
+        failure {
+            script {
+                def servicesList = env.SERVICES.tokenize(' ')
+                def rollbackCmds = servicesList.collect { svc ->
+                    "  kubectl rollout undo deployment/${svc} -n ${env.NAMESPACE}"
+                }.join('\n')
+                echo "==> Deploy a STAGING FALLIDO. Rollback manual:\n${rollbackCmds}"
+                echo "==> Ver logs: kubectl logs -n ${env.NAMESPACE} deployment/<servicio>"
+            }
+        }
+        always {
+            cleanWs()
+        }
+    }
+}

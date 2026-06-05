@@ -1,0 +1,21 @@
+---
+# mTLS STRICT para el namespace de producción
+# Todos los servicios deben comunicarse únicamente con TLS mutuo
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: circleguard-prod
+spec:
+  mtls:
+    mode: STRICT
+---
+# mTLS PERMISSIVE en staging (permite tráfico sin mTLS para debugging)
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: circleguard-stage
+spec:
+  mtls:
+    mode: PERMISSIVE

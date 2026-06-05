@@ -1,0 +1,60 @@
+---
+# Canary deployment 80/20 para promotion-service
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: promotion-service-canary
+  namespace: circleguard-prod
+spec:
+  hosts:
+    - promotion-service
+  http:
+    - route:
+        - destination:
+            host: promotion-service
+            subset: v1
+          weight: 80
+        - destination:
+            host: promotion-service
+            subset: v2
+          weight: 20
+
+---
+# Retry policy para identity-service
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: identity-service
+  namespace: circleguard-prod
+spec:
+  hosts:
+    - identity-service
+  http:
+    - retries:
+        attempts: 3
+        perTryTimeout: 2s
+        retryOn: 5xx,reset,connect-failure,retriable-4xx
+      timeout: 8s
+      route:
+        - destination:
+            host: identity-service
+
+---
+# Retry policy para auth-service
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: auth-service
+  namespace: circleguard-prod
+spec:
+  hosts:
+    - auth-service
+  http:
+    - retries:
+        attempts: 3
+        perTryTimeout: 2s
+        retryOn: 5xx,reset,connect-failure
+      timeout: 8s
+      route:
+        - destination:
+            host: auth-service

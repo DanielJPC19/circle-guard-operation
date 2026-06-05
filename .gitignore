@@ -1,0 +1,35 @@
+# Terraform state — NEVER commit
+*.tfstate
+*.tfstate.backup
+*.tfstate.lock.info
+.terraform/
+**/.terraform.lock.hcl
+*.tfplan
+*.tfplan.json
+crash.log
+crash.*.log
+
+# Terraform variable files with secrets
+*.tfvars
+!*.tfvars.example
+
+# Environment secrets
+.env
+.env.*
+*.secret
+
+# Kubernetes — NEVER commit unencrypted secrets
+# Only SealedSecrets (*.yml in k8s/secrets/) are safe
+# Raw Secret manifests:
+*-secret-raw.yml
+
+# kubeconfig
+kubeconfig
+*.kubeconfig
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/

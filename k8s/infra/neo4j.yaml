@@ -1,0 +1,70 @@
+# Neo4j for CircleGuard
+# Service name: circleguard-neo4j:7687 (bolt) — matches SPRING_NEO4J_URI in promotion-service
+# Auth: neo4j/password — matches SPRING_NEO4J_AUTHENTICATION_PASSWORD
+# enableServiceLinks: false prevents K8s from injecting NEO4J_PORT env var that breaks Neo4j startup
+# Deploy: kubectl apply -f k8s/infra/neo4j.yaml -n <namespace>
+# El mismo YAML se usa en dev/stage/prod — siempre pasar -n $NAMESPACE
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: neo4j
+  labels:
+    app: neo4j
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: neo4j
+  template:
+    metadata:
+      labels:
+        app: neo4j
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: neo4j
+          image: neo4j:5.26-community
+          ports:
+            - containerPort: 7474
+              name: http
+            - containerPort: 7687
+              name: bolt
+          env:
+            - name: NEO4J_AUTH
+              value: "neo4j/password"
+            - name: NEO4J_server_config_strict__validation_enabled
+              value: "false"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 768Mi
+          volumeMounts:
+            - name: neo4j-data
+              mountPath: /var/lib/neo4j/data
+            - name: neo4j-logs
+              mountPath: /var/lib/neo4j/logs
+      volumes:
+        - name: neo4j-data
+          emptyDir: {}
+        - name: neo4j-logs
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: circleguard-neo4j
+spec:
+  type: ClusterIP
+  selector:
+    app: neo4j
+  ports:
+    - port: 7687
+      targetPort: 7687
+      name: bolt
+    - port: 7474
+      targetPort: 7474
+      name: http

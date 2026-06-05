@@ -1,0 +1,35 @@
+---
+# KEDA ScaledObject para promotion-service en dev
+# Escala a 0 réplicas cuando no hay mensajes en Kafka → escala hasta 3 cuando hay carga
+# Prerequisito: KEDA instalado vía helm_release.keda en k8s-addons/main.tf
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: promotion-service-scaler
+  namespace: circleguard-dev
+spec:
+  scaleTargetRef:
+    name: promotion-service
+  pollingInterval: 30
+  cooldownPeriod: 120
+  minReplicaCount: 0
+  maxReplicaCount: 3
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: circleguard-kafka.circleguard-dev.svc.cluster.local:9092
+        consumerGroup: promotion-service-group
+        topic: promotion-events
+        lagThreshold: "10"
+        offsetResetPolicy: latest
+
+---
+# TriggerAuthentication para Kafka (si el cluster requiere autenticación SASL)
+# Comentar si Kafka en dev no tiene autenticación
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: keda-kafka-auth
+  namespace: circleguard-dev
+spec:
+  secretTargetRef: []

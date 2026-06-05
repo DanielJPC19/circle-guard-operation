@@ -1,0 +1,21 @@
+# StressChaos: saturación de CPU en neo4j para probar HPA de promotion-service
+# Valida: HPA scaling, alertas Prometheus, degradación graceful
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: neo4j-cpu-stress
+  namespace: chaos-testing
+spec:
+  mode: one
+  selector:
+    namespaces: ["circleguard-stage"]
+    labelSelectors:
+      app: circleguard-neo4j
+  stressors:
+    cpu:
+      workers: 4
+      load: 90
+    memory:
+      workers: 2
+      size: "256MB"
+  duration: "3m"

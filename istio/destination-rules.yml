@@ -1,0 +1,62 @@
+---
+# Circuit Breaker para identity-service (servicio más crítico)
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: identity-service-cb
+  namespace: circleguard-prod
+spec:
+  host: identity-service
+  trafficPolicy:
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+    connectionPool:
+      http:
+        http1MaxPendingRequests: 100
+        http2MaxRequests: 1000
+        idleTimeout: 90s
+
+---
+# Circuit Breaker para auth-service
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: auth-service-cb
+  namespace: circleguard-prod
+spec:
+  host: auth-service
+  trafficPolicy:
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+    connectionPool:
+      http:
+        http1MaxPendingRequests: 100
+        http2MaxRequests: 1000
+
+---
+# Subsets para canary deployment de promotion-service
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: promotion-service
+  namespace: circleguard-prod
+spec:
+  host: promotion-service
+  trafficPolicy:
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+  subsets:
+    - name: v1
+      labels:
+        version: "v1"
+    - name: v2
+      labels:
+        version: "v2"

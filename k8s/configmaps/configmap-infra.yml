@@ -1,0 +1,89 @@
+---
+# ConfigMap: DNS interno por namespace
+# Los servicios de infra (postgres, kafka, redis, neo4j) corren en el mismo namespace
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: circleguard-infra-config
+  namespace: circleguard-dev
+data:
+  POSTGRES_HOST: "circleguard-postgres.circleguard-dev.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  POSTGRES_USER: "admin"
+
+  KAFKA_BOOTSTRAP_SERVERS: "circleguard-kafka.circleguard-dev.svc.cluster.local:9092"
+  KAFKA_BROKERS: "circleguard-kafka.circleguard-dev.svc.cluster.local:9092"
+
+  REDIS_HOST: "circleguard-redis.circleguard-dev.svc.cluster.local"
+  REDIS_PORT: "6379"
+
+  NEO4J_URI: "bolt://circleguard-neo4j.circleguard-dev.svc.cluster.local:7687"
+  NEO4J_USERNAME: "neo4j"
+
+  LDAP_URL: "ldap://circleguard-openldap.circleguard-dev.svc.cluster.local:389"
+  LDAP_BASE_DN: "dc=circleguard,dc=edu"
+  LDAP_MANAGER_DN: "cn=admin,dc=circleguard,dc=edu"
+
+  LOGGING_LEVEL_ROOT: "DEBUG"
+  LOGGING_LEVEL_COM_CIRCLEGUARD: "DEBUG"
+
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,metrics,prometheus"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: circleguard-infra-config
+  namespace: circleguard-stage
+data:
+  POSTGRES_HOST: "circleguard-postgres.circleguard-stage.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  POSTGRES_USER: "admin"
+
+  KAFKA_BOOTSTRAP_SERVERS: "circleguard-kafka.circleguard-stage.svc.cluster.local:9092"
+  KAFKA_BROKERS: "circleguard-kafka.circleguard-stage.svc.cluster.local:9092"
+
+  REDIS_HOST: "circleguard-redis.circleguard-stage.svc.cluster.local"
+  REDIS_PORT: "6379"
+
+  NEO4J_URI: "bolt://circleguard-neo4j.circleguard-stage.svc.cluster.local:7687"
+  NEO4J_USERNAME: "neo4j"
+
+  LDAP_URL: "ldap://circleguard-openldap.circleguard-stage.svc.cluster.local:389"
+  LDAP_BASE_DN: "dc=circleguard,dc=edu"
+  LDAP_MANAGER_DN: "cn=admin,dc=circleguard,dc=edu"
+
+  LOGGING_LEVEL_ROOT: "INFO"
+  LOGGING_LEVEL_COM_CIRCLEGUARD: "INFO"
+
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,metrics,prometheus"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: circleguard-infra-config
+  namespace: circleguard-prod
+data:
+  POSTGRES_HOST: "circleguard-postgres.circleguard-prod.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  POSTGRES_USER: "admin"
+
+  KAFKA_BOOTSTRAP_SERVERS: "circleguard-kafka.circleguard-prod.svc.cluster.local:9092"
+  KAFKA_BROKERS: "circleguard-kafka.circleguard-prod.svc.cluster.local:9092"
+
+  REDIS_HOST: "circleguard-redis.circleguard-prod.svc.cluster.local"
+  REDIS_PORT: "6379"
+
+  NEO4J_URI: "bolt://circleguard-neo4j.circleguard-prod.svc.cluster.local:7687"
+  NEO4J_USERNAME: "neo4j"
+
+  LDAP_URL: "ldap://circleguard-openldap.circleguard-prod.svc.cluster.local:389"
+  LDAP_BASE_DN: "dc=circleguard,dc=edu"
+  LDAP_MANAGER_DN: "cn=admin,dc=circleguard,dc=edu"
+
+  LOGGING_LEVEL_ROOT: "WARN"
+  LOGGING_LEVEL_COM_CIRCLEGUARD: "INFO"
+
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,metrics,prometheus"

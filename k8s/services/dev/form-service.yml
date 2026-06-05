@@ -1,0 +1,72 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: form-service
+  namespace: circleguard-dev
+  labels:
+    app: form-service
+    version: v1
+    environment: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: form-service
+  template:
+    metadata:
+      labels:
+        app: form-service
+        version: v1
+    spec:
+      serviceAccountName: circleguard-sa
+      containers:
+        - name: form-service
+          image: cgregistry.azurecr.io/circleguard/circleguard-form-service:dev-PLACEHOLDER
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8086
+          envFrom:
+            - configMapRef:
+                name: circleguard-infra-config
+            - secretRef:
+                name: circleguard-secret
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "dev"
+            - name: SERVER_PORT
+              value: "8086"
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://$(POSTGRES_HOST):$(POSTGRES_PORT)/circleguard_form"
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8086
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8086
+            initialDelaySeconds: 30
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: form-service
+  namespace: circleguard-dev
+spec:
+  selector:
+    app: form-service
+  ports:
+    - port: 8086
+      targetPort: 8086
+  type: ClusterIP

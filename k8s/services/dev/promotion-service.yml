@@ -1,0 +1,81 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: promotion-service
+  namespace: circleguard-dev
+  labels:
+    app: promotion-service
+    version: v1
+    environment: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: promotion-service
+  template:
+    metadata:
+      labels:
+        app: promotion-service
+        version: v1
+    spec:
+      serviceAccountName: circleguard-sa
+      containers:
+        - name: promotion-service
+          image: cgregistry.azurecr.io/circleguard/circleguard-promotion-service:dev-PLACEHOLDER
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8088
+          envFrom:
+            - configMapRef:
+                name: circleguard-infra-config
+            - secretRef:
+                name: circleguard-secret
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "dev"
+            - name: SERVER_PORT
+              value: "8088"
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://$(POSTGRES_HOST):$(POSTGRES_PORT)/circleguard_promotion"
+            - name: SPRING_NEO4J_URI
+              value: "$(NEO4J_URI)"
+            - name: SPRING_NEO4J_AUTHENTICATION_USERNAME
+              value: "$(NEO4J_USERNAME)"
+            - name: SPRING_NEO4J_AUTHENTICATION_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: circleguard-secret
+                  key: NEO4J_PASSWORD
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "300m"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8088
+            initialDelaySeconds: 90
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8088
+            initialDelaySeconds: 60
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: promotion-service
+  namespace: circleguard-dev
+spec:
+  selector:
+    app: promotion-service
+  ports:
+    - port: 8088
+      targetPort: 8088
+  type: ClusterIP

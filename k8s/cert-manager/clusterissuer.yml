@@ -1,0 +1,35 @@
+---
+# ClusterIssuer para Let's Encrypt (producción)
+# Referenciado por todos los Ingress con: cert-manager.io/cluster-issuer: "letsencrypt-prod"
+# Prerequisito: cert-manager instalado (helm_release.cert_manager en k8s-addons/main.tf)
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: devops@circleguard.edu
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      - http01:
+          ingress:
+            ingressClassName: nginx
+
+---
+# ClusterIssuer para Let's Encrypt (staging - para pruebas sin rate limits)
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: devops@circleguard.edu
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+    solvers:
+      - http01:
+          ingress:
+            ingressClassName: nginx

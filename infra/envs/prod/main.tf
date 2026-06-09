@@ -40,4 +40,6 @@ module "k8s_addons" {
   enable_chaos          = false
   enable_finops         = true
   enable_keda           = false
+
+  depends_on = [module.aks]
 }

@@ -9,11 +9,10 @@ provider "helm" {
   }
 }
 
-module "acr" {
-  source         = "../../modules/acr"
-  acr_name       = "cgregistry"
-  resource_group = "circleguard-shared-rg"
-  location       = var.location
+# ACR is shared across environments — reference the existing registry
+data "azurerm_container_registry" "shared" {
+  name                = "cgregistry"
+  resource_group_name = "circleguard-shared-rg"
 }
 
 module "aks" {
@@ -21,7 +20,7 @@ module "aks" {
   resource_group = "circleguard-stage-rg"
   location       = var.location
   node_count     = 2
-  acr_id         = module.acr.acr_id
+  acr_id         = data.azurerm_container_registry.shared.id
 }
 
 module "k8s_addons" {
@@ -35,4 +34,6 @@ module "k8s_addons" {
   enable_chaos          = true
   enable_finops         = true
   enable_keda           = false
+
+  depends_on = [module.aks]
 }

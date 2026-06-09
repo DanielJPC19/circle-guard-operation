@@ -39,4 +39,6 @@ module "k8s_addons" {
   enable_istio          = false
   enable_chaos          = false
   enable_finops         = true
+
+  depends_on = [module.aks]
 }

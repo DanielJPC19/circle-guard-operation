@@ -13,7 +13,7 @@ resource "azurerm_resource_group" "staging" {
 }
 
 resource "azurerm_log_analytics_workspace" "staging" {
-  name                = "circleguard-logs-stage"
+  name                = "circleguard-logs-${var.environment_tag}"
   location            = var.location
   resource_group_name = var.resource_group
   sku                 = "PerGB2018"

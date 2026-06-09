@@ -7,7 +7,7 @@ variable "resource_group" {
 variable "location" {
   description = "Azure region"
   type        = string
-  default     = "eastus"
+  default     = "brazilsouth"
 }
 
 variable "node_count" {

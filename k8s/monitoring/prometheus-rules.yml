@@ -1,0 +1,78 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: circleguard-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: circleguard.availability
+      interval: 30s
+      rules:
+        - alert: PodCrashLooping
+          expr: |
+            rate(kube_pod_container_status_restarts_total{
+              namespace=~"circleguard-.*"
+            }[5m]) * 60 > 2
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Pod {{ $labels.pod }} está en CrashLoopBackOff"
+            description: "{{ $labels.pod }} en {{ $labels.namespace }} ha reiniciado más de 2 veces por minuto."
+
+        - alert: DeploymentRolloutStuck
+          expr: |
+            kube_deployment_status_replicas_unavailable{
+              namespace=~"circleguard-.*"
+            } > 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Deployment {{ $labels.deployment }} tiene réplicas no disponibles"
+            description: "{{ $labels.deployment }} en {{ $labels.namespace }} lleva 5 min con réplicas unavailable."
+
+    - name: circleguard.latency
+      rules:
+        - alert: HighP99Latency
+          expr: |
+            histogram_quantile(0.99,
+              sum(rate(http_server_requests_seconds_bucket{
+                namespace=~"circleguard-.*"
+              }[5m])) by (le, application, namespace)
+            ) > 2
+          for: 3m
+          labels:
+            severity: warning
+          annotations:
+            summary: "P99 latencia alta en {{ $labels.application }}"
+            description: "Latencia P99 > 2s durante 3 minutos en {{ $labels.application }} ({{ $labels.namespace }})."
+
+    - name: circleguard.kafka
+      rules:
+        - alert: KafkaConsumerLagHigh
+          expr: |
+            kafka_consumer_group_lag{
+              namespace=~"circleguard-.*"
+            } > 1000
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Kafka consumer lag alto en {{ $labels.topic }}"
+            description: "Consumer group {{ $labels.group }} tiene lag > 1000 en topic {{ $labels.topic }}."
+
+    - name: circleguard.neo4j
+      rules:
+        - alert: Neo4jHeapHigh
+          expr: |
+            (neo4j_memory_heap_used_bytes / neo4j_memory_heap_max_bytes) * 100 > 85
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Heap de Neo4j por encima del 85%"
+            description: "Neo4j heap al {{ $value | humanizePercentage }} — riesgo de OOM."

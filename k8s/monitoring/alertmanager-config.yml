@@ -1,0 +1,83 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: alertmanager-kube-prometheus-stack-alertmanager
+  namespace: monitoring
+type: Opaque
+stringData:
+  alertmanager.yml: |
+    global:
+      resolve_timeout: 5m
+      slack_api_url: 'REPLACE_WITH_SLACK_WEBHOOK_URL'
+      pagerduty_url: 'https://events.pagerduty.com/v2/enqueue'
+
+    route:
+      receiver: 'null'
+      group_by: ['alertname', 'cluster', 'service']
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 12h
+      routes:
+        # Ruta crítica → PagerDuty + Slack
+        - match:
+            severity: critical
+          receiver: pagerduty-critical
+          continue: true
+          routes:
+            - receiver: slack-notifications
+              group_wait: 0s
+              group_interval: 5m
+              repeat_interval: 4h
+
+        # Ruta warning → Solo Slack
+        - match:
+            severity: warning
+          receiver: slack-notifications
+          group_wait: 10s
+          group_interval: 10m
+          repeat_interval: 24h
+
+        # Ruta info → Descartada (null)
+        - match:
+            severity: info
+          receiver: 'null'
+
+    receivers:
+      - name: 'null'
+
+      - name: slack-notifications
+        slack_configs:
+          - channel: '#circleguard-alerts'
+            title: '{{ .GroupLabels.alertname }}'
+            text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+            send_resolved: true
+            color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
+            actions:
+              - type: button
+                text: 'View Alert'
+                url: '{{ .ExternalURL }}'
+
+      - name: pagerduty-critical
+        pagerduty_configs:
+          - service_key: 'REPLACE_WITH_PAGERDUTY_INTEGRATION_KEY'
+            description: '{{ .GroupLabels.alertname }} - {{ .Alerts.Firing | len }} alerts firing'
+            details:
+              firing: '{{ template "pagerduty.default.instances" .Alerts.Firing }}'
+            client: 'CircleGuard Prometheus'
+            client_url: '{{ .ExternalURL }}'
+
+    inhibit_rules:
+      # Inhibir warning si hay critical para el mismo servicio
+      - source_match:
+          severity: critical
+        target_match:
+          severity: warning
+        equal: ['alertname', 'service', 'instance']
+
+      # Inhibir info si hay warning
+      - source_match:
+          severity: warning
+        target_match:
+          severity: info
+        equal: ['alertname', 'service', 'instance']

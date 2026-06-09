@@ -7,21 +7,40 @@ set -e
 SERVICE=$1
 TAG=$2
 ENV=$3
-DOCKERHUB_USER=${DOCKERHUB_USER:-danieljpc1119}
 
 if [ -z "$SERVICE" ] || [ -z "$TAG" ] || [ -z "$ENV" ]; then
     echo "Usage: $0 <service> <tag> <environment>"
-    echo "  environment: stage | prod"
+    echo "  environment: dev | staging | prod"
     exit 1
 fi
 
-MANIFEST="k8s/${ENV}/${SERVICE}.yaml"
+# Map environment names: staging → stage, dev → dev, prod → prod
+case "$ENV" in
+    dev)
+        K8S_ENV="dev"
+        ;;
+    staging)
+        K8S_ENV="stage"
+        ;;
+    prod)
+        K8S_ENV="prod"
+        ;;
+    *)
+        echo "Error: Unknown environment '$ENV'. Valid: dev, staging, prod"
+        exit 1
+        ;;
+esac
+
+MANIFEST="k8s/services/${K8S_ENV}/all-services.yml"
 
 if [ ! -f "$MANIFEST" ]; then
     echo "Error: manifest not found at $MANIFEST"
     exit 1
 fi
 
-sed -i "s|image: ${DOCKERHUB_USER}/circleguard-${SERVICE}:.*|image: ${DOCKERHUB_USER}/circleguard-${SERVICE}:${TAG}|" "$MANIFEST"
+ACR_REGISTRY="cgregistry.azurecr.io"
+IMAGE_PATTERN="${ACR_REGISTRY}/circleguard/circleguard-${SERVICE}"
 
-echo "Updated $MANIFEST -> ${DOCKERHUB_USER}/circleguard-${SERVICE}:${TAG}"
+sed -i "s|image: ${IMAGE_PATTERN}:.*|image: ${IMAGE_PATTERN}:${TAG}|g" "$MANIFEST"
+
+echo "Updated $MANIFEST -> ${IMAGE_PATTERN}:${TAG}"

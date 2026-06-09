@@ -21,23 +21,23 @@ resource "azurerm_log_analytics_workspace" "staging" {
 }
 
 resource "azurerm_kubernetes_cluster" "staging" {
-  name                = "circleguard-stage"
+  name                = var.cluster_name
   location            = var.location
   resource_group_name = var.resource_group
-  dns_prefix          = "cg-stage"
+  dns_prefix          = var.dns_prefix
   kubernetes_version  = "1.32"
 
   default_node_pool {
     name                = "system"
     node_count          = var.node_count
-    vm_size             = "Standard_D2s_v3"
+    vm_size             = var.vm_size
     enable_auto_scaling = true
-    min_count           = 1
-    max_count           = 4
+    min_count           = var.min_count
+    max_count           = var.max_count
     os_disk_size_gb     = 30
 
     node_labels = {
-      environment = "staging"
+      environment = var.environment_tag
     }
   }
 
@@ -55,7 +55,7 @@ resource "azurerm_kubernetes_cluster" "staging" {
   }
 
   tags = {
-    environment = "staging"
+    environment = var.environment_tag
     managed-by  = "terraform"
   }
 }

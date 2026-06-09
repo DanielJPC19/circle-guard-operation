@@ -19,8 +19,8 @@ spec:
       metadata:
         bootstrapServers: circleguard-kafka.circleguard-dev.svc.cluster.local:9092
         consumerGroup: promotion-service-group
-        topic: promotion-events
-        lagThreshold: "10"
+        topic: health-status-events
+        lagThreshold: "5"
         offsetResetPolicy: latest
 
 ---

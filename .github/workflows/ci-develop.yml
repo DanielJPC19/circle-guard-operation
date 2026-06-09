@@ -1,0 +1,103 @@
+name: CI — Develop
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [develop]
+
+env:
+  ACR_REGISTRY: ${{ secrets.ACR_LOGIN_SERVER }}
+  SERVICES: "auth-service identity-service promotion-service gateway-service notification-service form-service"
+
+jobs:
+  build-and-deploy:
+    name: Build, Test, Scan & Deploy Dev
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+
+      - name: Build all services
+        run: ./gradlew build -x test --parallel
+
+      - name: Run unit tests + JaCoCo
+        run: ./gradlew test jacocoTestReport jacocoTestCoverageVerification --parallel
+
+      - name: SonarQube Analysis
+        run: |
+          ./gradlew sonarqube \
+            -Dsonar.projectKey=circleguard \
+            -Dsonar.host.url=${{ secrets.SONARQUBE_URL }} \
+            -Dsonar.login=${{ secrets.SONARQUBE_TOKEN }} \
+            -Dsonar.coverage.jacoco.xmlReportPaths=**/build/reports/jacoco/test/jacocoTestReport.xml
+
+      - name: SonarQube Quality Gate
+        uses: sonarsource/sonarqube-quality-gate-action@master
+        with:
+          scanMetadataReportFile: .scannerwork/report-task.txt
+        env:
+          SONAR_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
+
+      - name: Login to ACR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.ACR_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build & Push images
+        run: |
+          SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
+          for SERVICE in $SERVICES; do
+            echo "==> Building $SERVICE..."
+            JAR=$(find services/circleguard-${SERVICE}/build/libs -name "*.jar" ! -name "*-plain.jar" | head -1)
+            IMAGE="${ACR_REGISTRY}/circleguard/circleguard-${SERVICE}:dev-${SHORT_SHA}"
+            docker build \
+              -f services/circleguard-${SERVICE}/Dockerfile \
+              --build-arg JAR_FILE=${JAR} \
+              --label "git.sha=${GITHUB_SHA}" \
+              --label "git.branch=${GITHUB_REF_NAME}" \
+              -t "${IMAGE}" .
+            docker push "${IMAGE}"
+          done
+
+      - name: Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.ACR_REGISTRY }}/circleguard/circleguard-gateway-service:dev-${{ github.sha }}
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+
+      - name: Upload Trivy results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif
+
+    # Notify on failure
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": ":red_circle: CI *develop* FALLIDO — <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Ver build>"
+            }

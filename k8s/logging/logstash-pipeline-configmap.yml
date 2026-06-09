@@ -1,0 +1,56 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-pipeline
+  namespace: logging
+data:
+  circleguard.conf: |
+    input {
+      beats {
+        port => 5044
+      }
+    }
+
+    filter {
+      # Parsear logs JSON de Spring Boot
+      if [message] =~ /^\{/ {
+        json {
+          source => "message"
+          target => "spring"
+        }
+        mutate {
+          add_field => {
+            "service_name"  => "%{[spring][logger_name]}"
+            "trace_id"      => "%{[spring][trace]}"
+            "span_id"       => "%{[spring][span]}"
+            "log_level"     => "%{[spring][level]}"
+            "thread"        => "%{[spring][thread_name]}"
+          }
+          remove_field => ["message", "agent", "ecs"]
+        }
+      }
+
+      # Extraer namespace y pod desde metadata de Kubernetes
+      if [kubernetes][namespace] =~ /circleguard/ {
+        mutate {
+          add_field => {
+            "environment" => "%{[kubernetes][namespace]}"
+            "service"     => "%{[kubernetes][labels][app]}"
+          }
+        }
+      }
+
+      date {
+        match => ["[spring][timestamp]", "ISO8601"]
+        target => "@timestamp"
+      }
+    }
+
+    output {
+      elasticsearch {
+        hosts => ["elasticsearch-master:9200"]
+        index => "circleguard-%{service}-%{+YYYY.MM.dd}"
+        template_name => "circleguard"
+      }
+    }

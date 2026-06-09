@@ -13,9 +13,8 @@ pipeline {
     }
 
     environment {
-        GCP_PROJECT      = 'ingesoft-v'
-        GKE_CLUSTER      = 'circleguard-prod'
-        GKE_ZONE         = 'us-central1-a'
+        AKS_RG           = 'circleguard-prod-rg'
+        AKS_CLUSTER      = 'circleguard-prod'
         ACR_REGISTRY     = 'cgregistry.azurecr.io'
         NAMESPACE        = 'circleguard-prod'
         K8S_DIR          = 'k8s/services/prod'
@@ -23,20 +22,29 @@ pipeline {
         SERVICES         = 'auth-service identity-service promotion-service gateway-service notification-service form-service'
         ROLLOUT_TIMEOUT  = '300'
         GITHUB_REPO      = 'circleguard-development'
+        SLACK_WEBHOOK    = credentials('slack-webhook-prod')
     }
 
     stages {
 
-        // ── Stage 1: Autenticar en GCP y configurar kubectl ──────────────────────
-        stage('GCloud Auth & Kubectl Config') {
+        // ── Stage 1: Autenticar en Azure y configurar kubectl ───────────────────
+        stage('Azure Auth & Kubectl Config') {
             steps {
-                withCredentials([file(credentialsId: 'gcp-service-account-key-prod', variable: 'GCLOUD_KEY')]) {
+                withCredentials([usernamePassword(
+                    credentialsId: 'azure-sp-credentials',
+                    usernameVariable: 'AZ_CLIENT_ID',
+                    passwordVariable: 'AZ_CLIENT_SECRET'
+                )]) {
                     sh '''
-                        gcloud auth activate-service-account --key-file=$GCLOUD_KEY
-                        gcloud config set project $GCP_PROJECT
-                        gcloud container clusters get-credentials $GKE_CLUSTER \
-                            --zone $GKE_ZONE \
-                            --project $GCP_PROJECT
+                        az login --service-principal \
+                            -u $AZ_CLIENT_ID \
+                            -p $AZ_CLIENT_SECRET \
+                            --tenant $(az account show --query tenantId -o tsv 2>/dev/null || echo $AZ_TENANT_ID)
+
+                        az aks get-credentials \
+                            --resource-group $AKS_RG \
+                            --name $AKS_CLUSTER \
+                            --overwrite-existing
 
                         echo "==> Verificando conexión al cluster de producción..."
                         kubectl config current-context
@@ -99,13 +107,13 @@ pipeline {
             }
         }
 
-        // ── Stage 6: Validar manifests (client-side) ────────────────────────────
+        // ── Stage 6: Validar manifests (server-side) ────────────────────────────
         stage('Validate Manifests (dry-run)') {
             steps {
                 sh '''
                     echo "==> Validando manifiestos para producción (namespace: $NAMESPACE)..."
                     kubectl apply -f $K8S_DIR/all-services.yml \
-                        --dry-run=client \
+                        --dry-run=server \
                         --namespace=$NAMESPACE
                     echo "==> Validación exitosa"
                 '''
@@ -319,6 +327,55 @@ Jenkins build: ${env.BUILD_URL}
                 echo "==> Deploy a PRODUCCIÓN FALLIDO. Rollback manual:\n${rollbackCmds}"
                 echo "==> Ver logs: kubectl logs -n ${env.NAMESPACE} deployment/<servicio>"
                 echo "==> Estado actual: kubectl get pods -n ${env.NAMESPACE}"
+
+                // Send Slack notification
+                def slackMessage = """{
+                    "text": "🔴 Production Deployment FAILED",
+                    "blocks": [
+                        {
+                            "type": "header",
+                            "text": {
+                                "type": "plain_text",
+                                "text": "🔴 Production Deployment Failed",
+                                "emoji": true
+                            }
+                        },
+                        {
+                            "type": "section",
+                            "fields": [
+                                {
+                                    "type": "mrkdwn",
+                                    "text": "*Status:*\nFAILED - Automatic Rollback Applied"
+                                },
+                                {
+                                    "type": "mrkdwn",
+                                    "text": "*Image Tag:*\n${params.IMAGE_TAG}"
+                                },
+                                {
+                                    "type": "mrkdwn",
+                                    "text": "*Environment:*\n${params.ENVIRONMENT}"
+                                },
+                                {
+                                    "type": "mrkdwn",
+                                    "text": "*Build:*\n<${env.BUILD_URL}|Jenkins Build #${env.BUILD_NUMBER}>"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "section",
+                            "text": {
+                                "type": "mrkdwn",
+                                "text": "*Action Required:*\n• Review logs: \`kubectl logs -n ${env.NAMESPACE} deployment/<service>\`\n• Check pod status: \`kubectl get pods -n ${env.NAMESPACE}\`\n• Rollback has been automatically applied"
+                            }
+                        }
+                    ]
+                }"""
+
+                sh '''
+                    curl -X POST "${SLACK_WEBHOOK}" \
+                        -H 'Content-Type: application/json' \
+                        -d ''' + "'" + slackMessage + "'" + '''
+                '''
             }
         }
         always {

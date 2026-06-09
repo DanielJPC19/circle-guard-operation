@@ -1,2 +1,2 @@
-variable "do_token" { type = string; sensitive = true }
-variable "region" { type = string; default = "nyc1" }
+variable "azure_subscription_id" { type = string }
+variable "location" { type = string; default = "brazilsouth" }

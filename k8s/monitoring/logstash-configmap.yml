@@ -1,0 +1,350 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-pipeline
+  namespace: logging
+  labels:
+    app: logstash
+data:
+  logstash.conf: |
+    input {
+      beats {
+        port => 5000
+        type => "beats"
+      }
+    }
+
+    filter {
+      # Parsear logs JSON de Spring Boot
+      if [message] {
+        json {
+          source => "message"
+          skip_on_invalid_json => true
+          target => "@json_payload"
+        }
+      }
+
+      # Extraer información del contenedor desde kubernetes metadata
+      if [@json_payload] {
+        # Extraer service_name del contenedor
+        mutate {
+          add_field => {
+            "[circleguard][service_name]" => "%{[kubernetes][pod][name]}"
+          }
+          gsub => [
+            "[circleguard][service_name]", "-[0-9a-z]+$", ""
+          ]
+        }
+
+        # Extraer trace_id del payload JSON
+        if [@json_payload][traceId] {
+          mutate {
+            add_field => {
+              "[circleguard][trace_id]" => "%{[@json_payload][traceId]}"
+            }
+          }
+        }
+
+        # Extraer span_id del payload JSON
+        if [@json_payload][spanId] {
+          mutate {
+            add_field => {
+              "[circleguard][span_id]" => "%{[@json_payload][spanId]}"
+            }
+          }
+        }
+
+        # Extraer log_level
+        if [@json_payload][level] {
+          mutate {
+            add_field => {
+              "[circleguard][log_level]" => "%{[@json_payload][level]}"
+            }
+          }
+        } else if [log.level] {
+          mutate {
+            add_field => {
+              "[circleguard][log_level]" => "%{[log][level]}"
+            }
+          }
+        }
+
+        # Extraer timestamp de Spring Boot logs
+        if [@json_payload][timestamp] {
+          date {
+            match => ["[@json_payload][timestamp]", "ISO8601"]
+            target => "@timestamp"
+          }
+        }
+
+        # Extraer mensaje principal
+        if [@json_payload][message] {
+          mutate {
+            add_field => {
+              "[circleguard][message]" => "%{[@json_payload][message]}"
+            }
+          }
+        }
+
+        # Extraer nombre del logger
+        if [@json_payload][logger_name] {
+          mutate {
+            add_field => {
+              "[circleguard][logger]" => "%{[@json_payload][logger_name]}"
+            }
+          }
+        }
+
+        # Extraer thread name
+        if [@json_payload][thread_name] {
+          mutate {
+            add_field => {
+              "[circleguard][thread]" => "%{[@json_payload][thread_name]}"
+            }
+          }
+        }
+
+        # Enriquecer con metadatos de Kubernetes
+        if [kubernetes] {
+          mutate {
+            add_field => {
+              "[circleguard][pod]" => "%{[kubernetes][pod][name]}"
+              "[circleguard][namespace]" => "%{[kubernetes][namespace]}"
+              "[circleguard][container]" => "%{[kubernetes][container][name]}"
+              "[circleguard][node]" => "%{[kubernetes][node][name]}"
+            }
+          }
+        }
+
+        # Agregar timestamp de ingestión
+        mutate {
+          add_field => {
+            "[circleguard][ingestion_timestamp]" => "%{@timestamp}"
+          }
+        }
+      }
+
+      # Si no es JSON, extraer del log de texto plano
+      if ![circleguard][service_name] and [kubernetes] {
+        mutate {
+          add_field => {
+            "[circleguard][service_name]" => "%{[kubernetes][pod][name]}"
+            "[circleguard][namespace]" => "%{[kubernetes][namespace]}"
+            "[circleguard][message]" => "%{[message]}"
+            "[circleguard][log_level]" => "UNKNOWN"
+          }
+          gsub => [
+            "[circleguard][service_name]", "-[0-9a-z]+$", ""
+          ]
+        }
+      }
+
+      # Remover campos innecesarios
+      mutate {
+        remove_field => [
+          "[@json_payload]",
+          "[beat][name]",
+          "[beat][version]",
+          "[input][type]",
+          "cloud",
+          "ecs"
+        ]
+      }
+
+      # Marcar severidad basada en log_level
+      if [circleguard][log_level] == "ERROR" or [circleguard][log_level] == "FATAL" {
+        mutate {
+          add_field => {
+            "[circleguard][severity]" => "critical"
+          }
+        }
+      } else if [circleguard][log_level] == "WARN" {
+        mutate {
+          add_field => {
+            "[circleguard][severity]" => "warning"
+          }
+        }
+      } else {
+        mutate {
+          add_field => {
+            "[circleguard][severity]" => "info"
+          }
+        }
+      }
+    }
+
+    output {
+      if [circleguard][service_name] {
+        elasticsearch {
+          hosts => ["elasticsearch.logging:9200"]
+          index => "circleguard-%{[circleguard][service_name]}-%{+YYYY.MM.dd}"
+          document_type => "_doc"
+          codec => json
+        }
+      } else {
+        elasticsearch {
+          hosts => ["elasticsearch.logging:9200"]
+          index => "circleguard-unknown-%{+YYYY.MM.dd}"
+          document_type => "_doc"
+          codec => json
+        }
+      }
+
+      # Enviar también a stdout para debugging (opcional)
+      # stdout {
+      #   codec => json_lines
+      # }
+    }
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-startup-config
+  namespace: logging
+data:
+  startup.options: |
+    # https://www.elastic.co/guide/en/logstash/current/config-setting-files.html
+    JAVAOPTS="-Xms256m -Xmx512m"
+    LS_JAVA_OPTS="-Dls.cgroup.cpuacct.path.override=/ -Dls.cgroup.cpu.path.override=/ -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap"
+    LOGSTASH_KEYSTORE_PASS=""
+
+  jvm.options: |
+    -Xms256m
+    -Xmx512m
+    -XX:+UseG1GC
+    -XX:MaxGCPauseMillis=30
+    -XX:InitiatingHeapOccupancyPercent=35
+    -XX:+UnlockExperimentalVMOptions
+    -XX:G1HeapRegionSize=16m
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logstash
+  namespace: logging
+  labels:
+    app: logstash
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: logstash
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: logstash
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9600"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: default
+      terminationGracePeriodSeconds: 30
+
+      containers:
+        - name: logstash
+          image: docker.elastic.co/logstash/logstash:8.5.0
+          imagePullPolicy: IfNotPresent
+
+          env:
+            - name: ELASTICSEARCH_HOSTS
+              value: "http://elasticsearch.logging:9200"
+            - name: LOGSTASH_JAVA_OPTS
+              value: "-Xms256m -Xmx512m"
+
+          ports:
+            - name: beats
+              containerPort: 5000
+              protocol: TCP
+            - name: http
+              containerPort: 9600
+              protocol: TCP
+
+          volumeMounts:
+            - name: logstash-pipeline
+              mountPath: /usr/share/logstash/pipeline/
+              readOnly: true
+            - name: logstash-startup-config
+              mountPath: /usr/share/logstash/config/
+              readOnly: true
+
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 9600
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 9600
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+
+      volumes:
+        - name: logstash-pipeline
+          configMap:
+            name: logstash-pipeline
+            defaultMode: 0644
+
+        - name: logstash-startup-config
+          configMap:
+            name: logstash-startup-config
+            defaultMode: 0644
+
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values: ["logstash"]
+                topologyKey: kubernetes.io/hostname
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: logstash
+  namespace: logging
+  labels:
+    app: logstash
+spec:
+  selector:
+    app: logstash
+  ports:
+    - name: beats
+      port: 5000
+      targetPort: 5000
+      protocol: TCP
+    - name: http
+      port: 9600
+      targetPort: 9600
+      protocol: TCP
+  type: ClusterIP

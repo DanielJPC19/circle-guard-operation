@@ -1,0 +1,108 @@
+name: CI — Release (Staging)
+
+on:
+  push:
+    branches: ['release/**']
+
+env:
+  ACR_REGISTRY: ${{ secrets.ACR_LOGIN_SERVER }}
+  SERVICES: "auth-service identity-service promotion-service gateway-service notification-service form-service"
+
+jobs:
+  build-test-deploy-staging:
+    name: Build, Test, Deploy Staging
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+
+      - name: Build
+        run: ./gradlew build -x test --parallel
+
+      - name: Unit tests
+        run: ./gradlew test jacocoTestReport jacocoTestCoverageVerification --parallel
+
+      - name: Integration tests (Testcontainers)
+        run: ./gradlew integrationTest --parallel
+
+      - name: SonarQube
+        run: |
+          ./gradlew sonarqube \
+            -Dsonar.projectKey=circleguard \
+            -Dsonar.host.url=${{ secrets.SONARQUBE_URL }} \
+            -Dsonar.login=${{ secrets.SONARQUBE_TOKEN }}
+
+      - name: SonarQube Quality Gate
+        uses: sonarsource/sonarqube-quality-gate-action@master
+        with:
+          scanMetadataReportFile: .scannerwork/report-task.txt
+        env:
+          SONAR_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
+
+      - name: Login to ACR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.ACR_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build & Push staging images
+        id: build
+        run: |
+          SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
+          echo "image_tag=staging-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          for SERVICE in $SERVICES; do
+            JAR=$(find services/circleguard-${SERVICE}/build/libs -name "*.jar" ! -name "*-plain.jar" | head -1)
+            docker build -f services/circleguard-${SERVICE}/Dockerfile \
+              --build-arg JAR_FILE=${JAR} \
+              -t "${ACR_REGISTRY}/circleguard/circleguard-${SERVICE}:staging-${SHORT_SHA}" .
+            docker push "${ACR_REGISTRY}/circleguard/circleguard-${SERVICE}:staging-${SHORT_SHA}"
+          done
+
+      - name: Trivy scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.ACR_REGISTRY }}/circleguard/circleguard-gateway-service:${{ steps.build.outputs.image_tag }}
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+
+      - name: Trigger Jenkins Staging
+        id: jenkins
+        run: |
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST "${{ secrets.JENKINS_STAGING_URL }}/job/circleguard-staging/buildWithParameters" \
+            --user "ci:${{ secrets.JENKINS_TOKEN }}" \
+            --data-urlencode "IMAGE_TAG=${{ steps.build.outputs.image_tag }}")
+          echo "Jenkins response: $RESPONSE"
+          if [ "$RESPONSE" != "201" ]; then exit 1; fi
+
+      - name: Wait for Jenkins Staging
+        timeout-minutes: 30
+        run: |
+          until curl -sf \
+            "${{ secrets.JENKINS_STAGING_URL }}/job/circleguard-staging/lastBuild/api/json" \
+            --user "ci:${{ secrets.JENKINS_TOKEN }}" | \
+            python3 -c "import sys,json; b=json.load(sys.stdin); exit(0 if b['result']=='SUCCESS' else 1)"; do
+            sleep 30
+          done
+
+      - name: E2E tests (port-forward to staging)
+        run: |
+          az aks get-credentials --resource-group circleguard-stage-rg \
+            --name circleguard-stage --subscription ${{ secrets.AZ_SUBSCRIPTION_ID }}
+          kubectl port-forward svc/gateway-service 8087:8087 -n circleguard-stage &
+          sleep 10
+          ./gradlew e2eTest -Dbase.url=http://localhost:8087

@@ -141,3 +141,48 @@ kubectl apply -f chaos/stress-chaos.yml    # CPU/Memory stress en neo4j
 | `circleguard-dev` | DOKS (Digital Ocean) | Desarrollo |
 | `circleguard-stage` | AKS (Azure) | Staging |
 | `circleguard-prod` | GKE (GCP) | Producción |
+
+## GitHub Actions Secrets (DEV Repository)
+
+Los siguientes secretos deben configurarse en GitHub para que los workflows de CI/CD funcionen:
+
+| Secret | Descripción | Valor de Ejemplo | Dónde Obtener |
+|--------|-------------|------------------|-----------------|
+| `ACR_LOGIN_SERVER` | Azure Container Registry URL | `cgregistry.azurecr.io` | Azure Portal → Container Registries |
+| `ACR_USERNAME` | Usuario ACR | Service Principal AppID | Azure Portal → Access Keys |
+| `ACR_PASSWORD` | Contraseña ACR | Service Principal Password | Azure Portal → Access Keys |
+| `SONARQUBE_URL` | SonarQube Server URL | `https://sonarqube.circleguard.io` | SonarQube Admin Panel |
+| `SONARQUBE_TOKEN` | SonarQube Authentication Token | Token generado | SonarQube → User → Security → Generate Token |
+| `JENKINS_STAGING_URL` | URL Jenkins Staging | `https://jenkins-staging.circleguard.io` | Jenkins Controller URL |
+| `JENKINS_PROD_URL` | URL Jenkins Producción | `https://jenkins-prod.circleguard.io` | Jenkins Controller URL |
+| `JENKINS_TOKEN` | Jenkins API Token | API token para usuario jenkins-user | Jenkins → Manage Users → jenkins-user → API Token |
+| `GH_TOKEN` | GitHub Personal Access Token | PAT con `repo, workflow` scopes | GitHub → Settings → Developer settings → Personal access tokens |
+| `SLACK_WEBHOOK` | Slack Webhook URL | `https://hooks.slack.com/services/...` | Slack Workspace → Apps → Incoming Webhooks |
+| `AZ_SUBSCRIPTION_ID` | Azure Subscription ID | `12345678-1234-...` | Azure Portal → Subscriptions |
+
+**Setup en GitHub:**
+```bash
+# En GitHub UI: Settings → Secrets and Variables → Actions → New Repository Secret
+# O vía CLI:
+gh secret set ACR_LOGIN_SERVER --body "cgregistry.azurecr.io"
+gh secret set ACR_USERNAME --body "<SERVICE_PRINCIPAL_ID>"
+# ... etc
+```
+
+---
+
+## Documentation
+
+Documentación completa de CircleGuard está en la carpeta `docs/`:
+
+| Documento | Propósito | Audiencia |
+|-----------|-----------|-----------|
+| **[architecture.md](./docs/architecture.md)** | Visión general de la arquitectura multi-cloud con diagramas Mermaid | Architects, SREs, New Team Members |
+| **[operations-manual.md](./docs/operations-manual.md)** | Procedimientos operacionales: deploy, rollback, health checks, troubleshooting | DevOps Engineers, SREs, On-Call |
+| **[multi-cloud-comparison.md](./docs/multi-cloud-comparison.md)** | Comparativa de proveedores (DOKS vs AKS vs GKE) y estrategia de selección | Engineering Leads, Architects |
+| **[change-management.md](./docs/change-management.md)** | Proceso de cambios: commit conventions, quality gates, approvals, rollback | All Engineers, Release Managers |
+| **[design-patterns.md](./docs/design-patterns.md)** | Patrones de diseño implementados en CircleGuard | Backend Engineers, Architects |
+| **[cost-analysis.md](./docs/cost-analysis.md)** | Análisis de costos y estrategias FinOps | Finance, Engineering Leads |
+| **[chaos-results.md](./docs/chaos-results.md)** | Resultados de experimentos de Chaos Mesh para validar resiliencia | SREs, Quality Assurance |
+
+**Start here:** 👉 [architecture.md](./docs/architecture.md) para entender el sistema completo

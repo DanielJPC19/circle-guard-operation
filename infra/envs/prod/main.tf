@@ -1,6 +1,6 @@
-provider "google" {
-  project = var.gcp_project
-  region  = var.region
+provider "azurerm" {
+  features {}
+  subscription_id = var.azure_subscription_id
 }
 
 provider "helm" {
@@ -9,11 +9,24 @@ provider "helm" {
   }
 }
 
-module "gke" {
-  source     = "../../modules/gke"
-  project_id = var.gcp_project
-  region     = var.region
-  node_count = 3
+# ACR is shared across environments — reference the existing registry
+data "azurerm_container_registry" "shared" {
+  name                = "cgregistry"
+  resource_group_name = "circleguard-shared-rg"
+}
+
+module "aks" {
+  source          = "../../modules/aks"
+  resource_group  = "circleguard-prod-rg"
+  location        = var.location
+  node_count      = 3
+  acr_id          = data.azurerm_container_registry.shared.id
+  cluster_name    = "circleguard-prod"
+  dns_prefix      = "cg-prod"
+  vm_size         = "Standard_D2s_v3"
+  min_count       = 2
+  max_count       = 8
+  environment_tag = "prod"
 }
 
 module "k8s_addons" {

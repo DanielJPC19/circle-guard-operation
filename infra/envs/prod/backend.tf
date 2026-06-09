@@ -1,6 +1,8 @@
 terraform {
-  backend "gcs" {
-    bucket = "circleguard-tfstate"
-    prefix = "prod/terraform.tfstate"
+  backend "azurerm" {
+    resource_group_name  = "circleguard-tfstate-rg"
+    storage_account_name = "cgtfstate"
+    container_name       = "tfstate"
+    key                  = "prod/terraform.tfstate"
   }
 }

@@ -25,7 +25,7 @@ resource "azurerm_kubernetes_cluster" "staging" {
   location            = var.location
   resource_group_name = var.resource_group
   dns_prefix          = var.dns_prefix
-  kubernetes_version  = "1.32"
+  kubernetes_version  = "1.31"
 
   default_node_pool {
     name                = "system"

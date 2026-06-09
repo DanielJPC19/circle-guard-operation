@@ -15,7 +15,7 @@ pipeline {
     environment {
         AKS_RG           = 'circleguard-prod-rg'
         AKS_CLUSTER      = 'circleguard-prod'
-        ACR_REGISTRY     = 'cgregistry.azurecr.io'
+        ACR_REGISTRY     = 'cgregicesi.azurecr.io'
         NAMESPACE        = 'circleguard-prod'
         K8S_DIR          = 'k8s/services/prod'
         INFRA_DIR        = 'k8s/infra'

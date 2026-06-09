@@ -22,7 +22,7 @@ spec:
       serviceAccountName: circleguard-sa
       containers:
         - name: identity-service
-          image: cgregistry.azurecr.io/circleguard/circleguard-identity-service:dev-PLACEHOLDER
+          image: cgregicesi.azurecr.io/circleguard/circleguard-identity-service:dev-PLACEHOLDER
           imagePullPolicy: Always
           ports:
             - containerPort: 8083

@@ -22,7 +22,7 @@ spec:
       serviceAccountName: circleguard-sa
       containers:
         - name: promotion-service
-          image: cgregistry.azurecr.io/circleguard/circleguard-promotion-service:dev-PLACEHOLDER
+          image: cgregicesi.azurecr.io/circleguard/circleguard-promotion-service:dev-PLACEHOLDER
           imagePullPolicy: Always
           ports:
             - containerPort: 8088

@@ -9,10 +9,20 @@ provider "helm" {
   }
 }
 
-# ACR is shared across environments — reference the existing registry
-data "azurerm_container_registry" "shared" {
-  name                = "cgregistry"
-  resource_group_name = "circleguard-shared-rg"
+# Shared resource group — created once, used by ACR and referenced by dev/prod
+resource "azurerm_resource_group" "shared" {
+  name     = "circleguard-shared-rg"
+  location = var.location
+}
+
+# ACR — created in staging, referenced as data source by dev and prod
+module "acr" {
+  source         = "../../modules/acr"
+  acr_name       = "cgregicesi"
+  resource_group = azurerm_resource_group.shared.name
+  location       = var.location
+
+  depends_on = [azurerm_resource_group.shared]
 }
 
 module "aks" {
@@ -20,7 +30,7 @@ module "aks" {
   resource_group = "circleguard-stage-rg"
   location       = var.location
   node_count     = 2
-  acr_id         = data.azurerm_container_registry.shared.id
+  acr_id         = module.acr.acr_id
 }
 
 module "k8s_addons" {

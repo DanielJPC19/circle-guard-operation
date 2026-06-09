@@ -22,7 +22,7 @@ spec:
       serviceAccountName: circleguard-sa
       containers:
         - name: gateway-service
-          image: cgregistry.azurecr.io/circleguard/circleguard-gateway-service:dev-PLACEHOLDER
+          image: cgregicesi.azurecr.io/circleguard/circleguard-gateway-service:dev-PLACEHOLDER
           imagePullPolicy: Always
           ports:
             - containerPort: 8087

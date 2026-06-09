@@ -32,7 +32,7 @@ spec:
                     app: auth-service
       containers:
         - name: auth-service
-          image: cgregistry.azurecr.io/circleguard/circleguard-auth-service:prod-PLACEHOLDER
+          image: cgregicesi.azurecr.io/circleguard/circleguard-auth-service:prod-PLACEHOLDER
           imagePullPolicy: Always
           ports:
             - containerPort: 8180
@@ -137,7 +137,7 @@ spec:
                     app: identity-service
       containers:
         - name: identity-service
-          image: cgregistry.azurecr.io/circleguard/circleguard-identity-service:prod-PLACEHOLDER
+          image: cgregicesi.azurecr.io/circleguard/circleguard-identity-service:prod-PLACEHOLDER
           imagePullPolicy: Always
           ports:
             - containerPort: 8083
@@ -240,7 +240,7 @@ spec:
                     app: promotion-service
       containers:
         - name: promotion-service
-          image: cgregistry.azurecr.io/circleguard/circleguard-promotion-service:prod-PLACEHOLDER
+          image: cgregicesi.azurecr.io/circleguard/circleguard-promotion-service:prod-PLACEHOLDER
           imagePullPolicy: Always
           ports:
             - containerPort: 8088
@@ -352,7 +352,7 @@ spec:
                     app: gateway-service
       containers:
         - name: gateway-service
-          image: cgregistry.azurecr.io/circleguard/circleguard-gateway-service:prod-PLACEHOLDER
+          image: cgregicesi.azurecr.io/circleguard/circleguard-gateway-service:prod-PLACEHOLDER
           imagePullPolicy: Always
           ports:
             - containerPort: 8087
@@ -455,7 +455,7 @@ spec:
                     app: notification-service
       containers:
         - name: notification-service
-          image: cgregistry.azurecr.io/circleguard/circleguard-notification-service:prod-PLACEHOLDER
+          image: cgregicesi.azurecr.io/circleguard/circleguard-notification-service:prod-PLACEHOLDER
           imagePullPolicy: Always
           ports:
             - containerPort: 8082
@@ -556,7 +556,7 @@ spec:
                     app: form-service
       containers:
         - name: form-service
-          image: cgregistry.azurecr.io/circleguard/circleguard-form-service:prod-PLACEHOLDER
+          image: cgregicesi.azurecr.io/circleguard/circleguard-form-service:prod-PLACEHOLDER
           imagePullPolicy: Always
           ports:
             - containerPort: 8086

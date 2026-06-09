@@ -1,7 +1,7 @@
 variable "acr_name" {
   description = "Azure Container Registry name (globally unique)"
   type        = string
-  default     = "cgregistry"
+  default     = "cgregicesi"
 }
 
 variable "resource_group" {
@@ -12,5 +12,5 @@ variable "resource_group" {
 variable "location" {
   description = "Azure region"
   type        = string
-  default     = "eastus"
+  default     = "brazilsouth"
 }

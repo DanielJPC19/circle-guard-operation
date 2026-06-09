@@ -11,7 +11,7 @@ provider "helm" {
 
 # ACR is shared across environments — reference the existing registry
 data "azurerm_container_registry" "shared" {
-  name                = "cgregistry"
+  name                = "cgregicesi"
   resource_group_name = "circleguard-shared-rg"
 }
 

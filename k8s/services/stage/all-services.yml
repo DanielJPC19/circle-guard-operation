@@ -27,7 +27,7 @@ spec:
       serviceAccountName: circleguard-sa
       containers:
         - name: auth-service
-          image: cgregistry.azurecr.io/circleguard/circleguard-auth-service:staging-PLACEHOLDER
+          image: cgregicesi.azurecr.io/circleguard/circleguard-auth-service:staging-PLACEHOLDER
           imagePullPolicy: Always
           ports:
             - containerPort: 8180
@@ -125,7 +125,7 @@ spec:
       serviceAccountName: circleguard-sa
       containers:
         - name: identity-service
-          image: cgregistry.azurecr.io/circleguard/circleguard-identity-service:staging-PLACEHOLDER
+          image: cgregicesi.azurecr.io/circleguard/circleguard-identity-service:staging-PLACEHOLDER
           imagePullPolicy: Always
           ports:
             - containerPort: 8083
@@ -223,7 +223,7 @@ spec:
       serviceAccountName: circleguard-sa
       containers:
         - name: promotion-service
-          image: cgregistry.azurecr.io/circleguard/circleguard-promotion-service:staging-PLACEHOLDER
+          image: cgregicesi.azurecr.io/circleguard/circleguard-promotion-service:staging-PLACEHOLDER
           imagePullPolicy: Always
           ports:
             - containerPort: 8088
@@ -330,7 +330,7 @@ spec:
       serviceAccountName: circleguard-sa
       containers:
         - name: gateway-service
-          image: cgregistry.azurecr.io/circleguard/circleguard-gateway-service:staging-PLACEHOLDER
+          image: cgregicesi.azurecr.io/circleguard/circleguard-gateway-service:staging-PLACEHOLDER
           imagePullPolicy: Always
           ports:
             - containerPort: 8087
@@ -428,7 +428,7 @@ spec:
       serviceAccountName: circleguard-sa
       containers:
         - name: notification-service
-          image: cgregistry.azurecr.io/circleguard/circleguard-notification-service:staging-PLACEHOLDER
+          image: cgregicesi.azurecr.io/circleguard/circleguard-notification-service:staging-PLACEHOLDER
           imagePullPolicy: Always
           ports:
             - containerPort: 8082
@@ -524,7 +524,7 @@ spec:
       serviceAccountName: circleguard-sa
       containers:
         - name: form-service
-          image: cgregistry.azurecr.io/circleguard/circleguard-form-service:staging-PLACEHOLDER
+          image: cgregicesi.azurecr.io/circleguard/circleguard-form-service:staging-PLACEHOLDER
           imagePullPolicy: Always
           ports:
             - containerPort: 8086

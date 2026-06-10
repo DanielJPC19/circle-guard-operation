@@ -56,17 +56,17 @@ output "keda_status" {
 output "addons_summary" {
   description = "Summary of all installed addons and their namespaces"
   value = {
-    sealed_secrets    = length(helm_release.sealed_secrets) > 0 ? "kube-system" : null
-    cert_manager      = length(helm_release.cert_manager) > 0 ? "cert-manager" : null
-    prometheus        = length(helm_release.prometheus) > 0 ? "monitoring" : null
-    grafana           = length(helm_release.grafana) > 0 ? "monitoring" : null
-    elasticsearch     = length(helm_release.elasticsearch) > 0 ? "logging" : null
-    kibana            = length(helm_release.kibana) > 0 ? "logging" : null
-    jaeger            = length(helm_release.jaeger) > 0 ? "tracing" : null
-    istio             = length(helm_release.istiod) > 0 ? "istio-system" : null
-    kiali             = length(helm_release.kiali) > 0 ? "istio-system" : null
-    chaos_mesh        = length(helm_release.chaos_mesh) > 0 ? "chaos-testing" : null
-    kubecost          = length(helm_release.kubecost) > 0 ? "kubecost" : null
-    keda              = length(helm_release.keda) > 0 ? "keda" : null
+    sealed_secrets = length(helm_release.sealed_secrets) > 0 ? "kube-system" : null
+    cert_manager   = length(helm_release.cert_manager) > 0 ? "cert-manager" : null
+    prometheus     = length(helm_release.prometheus) > 0 ? "monitoring" : null
+    grafana        = length(helm_release.grafana) > 0 ? "monitoring" : null
+    elasticsearch  = length(helm_release.elasticsearch) > 0 ? "logging" : null
+    kibana         = length(helm_release.kibana) > 0 ? "logging" : null
+    jaeger         = length(helm_release.jaeger) > 0 ? "tracing" : null
+    istio          = length(helm_release.istiod) > 0 ? "istio-system" : null
+    kiali          = length(helm_release.kiali) > 0 ? "istio-system" : null
+    chaos_mesh     = length(helm_release.chaos_mesh) > 0 ? "chaos-testing" : null
+    kubecost       = length(helm_release.kubecost) > 0 ? "kubecost" : null
+    keda           = length(helm_release.keda) > 0 ? "keda" : null
   }
 }

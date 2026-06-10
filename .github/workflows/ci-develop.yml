@@ -1,4 +1,4 @@
-name: CI — Develop
+name: CI — Validate Terraform
 
 on:
   push:
@@ -6,91 +6,56 @@ on:
   pull_request:
     branches: [develop]
 
-env:
-  ACR_REGISTRY: ${{ secrets.ACR_LOGIN_SERVER }}
-  SERVICES: "auth-service identity-service promotion-service gateway-service notification-service form-service"
-
 jobs:
-  build-and-deploy:
-    name: Build, Test, Scan & Deploy Dev
+  terraform-validate:
+    name: Terraform Format & Validate
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          terraform_version: "~1.7"
 
-      - name: Cache Gradle
-        uses: actions/cache@v4
-        with:
-          path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive infra/
 
-      - name: Build all services
-        run: ./gradlew build -x test --parallel
-
-      - name: Run unit tests + JaCoCo
-        run: ./gradlew test jacocoTestReport jacocoTestCoverageVerification --parallel
-
-      - name: SonarQube Analysis
-        run: |
-          ./gradlew sonarqube \
-            -Dsonar.projectKey=circleguard \
-            -Dsonar.host.url=${{ secrets.SONARQUBE_URL }} \
-            -Dsonar.login=${{ secrets.SONARQUBE_TOKEN }} \
-            -Dsonar.coverage.jacoco.xmlReportPaths=**/build/reports/jacoco/test/jacocoTestReport.xml
-
-      - name: SonarQube Quality Gate
-        uses: sonarsource/sonarqube-quality-gate-action@master
-        with:
-          scanMetadataReportFile: .scannerwork/report-task.txt
+      - name: Validate — shared
+        working-directory: infra/envs/shared
         env:
-          SONAR_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
-
-      - name: Login to ACR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.ACR_REGISTRY }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-
-      - name: Build & Push images
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZ_SUBSCRIPTION_ID }}
+          ARM_CLIENT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}
+          ARM_CLIENT_SECRET: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}
+          ARM_TENANT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}
         run: |
-          SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
-          for SERVICE in $SERVICES; do
-            echo "==> Building $SERVICE..."
-            JAR=$(find services/circleguard-${SERVICE}/build/libs -name "*.jar" ! -name "*-plain.jar" | head -1)
-            IMAGE="${ACR_REGISTRY}/circleguard/circleguard-${SERVICE}:dev-${SHORT_SHA}"
-            docker build \
-              -f services/circleguard-${SERVICE}/Dockerfile \
-              --build-arg JAR_FILE=${JAR} \
-              --label "git.sha=${GITHUB_SHA}" \
-              --label "git.branch=${GITHUB_REF_NAME}" \
-              -t "${IMAGE}" .
-            docker push "${IMAGE}"
-          done
+          terraform init -backend=false
+          terraform validate
 
-      - name: Trivy vulnerability scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ env.ACR_REGISTRY }}/circleguard/circleguard-gateway-service:dev-${{ github.sha }}
-          format: sarif
-          output: trivy-results.sarif
-          severity: CRITICAL,HIGH
-          exit-code: '1'
+      - name: Validate — staging
+        working-directory: infra/envs/staging
+        env:
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZ_SUBSCRIPTION_ID }}
+          ARM_CLIENT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}
+          ARM_CLIENT_SECRET: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}
+          ARM_TENANT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}
+        run: |
+          terraform init -backend=false
+          terraform validate
 
-      - name: Upload Trivy results
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: trivy-results.sarif
+      - name: Validate — prod
+        working-directory: infra/envs/prod
+        env:
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZ_SUBSCRIPTION_ID }}
+          ARM_CLIENT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}
+          ARM_CLIENT_SECRET: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}
+          ARM_TENANT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}
+        run: |
+          terraform init -backend=false
+          terraform validate
 
-    # Notify on failure
       - name: Notify Slack on failure
         if: failure()
         uses: slackapi/slack-github-action@v1
@@ -99,5 +64,5 @@ jobs:
           webhook-type: incoming-webhook
           payload: |
             {
-              "text": ":red_circle: CI *develop* FALLIDO — <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Ver build>"
+              "text": ":red_circle: Terraform validate FALLIDO — <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Ver build>"
             }

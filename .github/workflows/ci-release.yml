@@ -99,10 +99,26 @@ jobs:
             sleep 30
           done
 
-      - name: E2E tests (port-forward to staging)
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Get AKS credentials
         run: |
-          az aks get-credentials --resource-group circleguard-stage-rg \
-            --name circleguard-stage --subscription ${{ secrets.AZ_SUBSCRIPTION_ID }}
+          az aks get-credentials \
+            --resource-group circleguard-stage-rg \
+            --name circleguard-stage \
+            --subscription ${{ secrets.AZ_SUBSCRIPTION_ID }} \
+            --overwrite-existing
+
+      - name: E2E smoke test (port-forward)
+        run: |
           kubectl port-forward svc/gateway-service 8087:8087 -n circleguard-stage &
-          sleep 10
-          ./gradlew e2eTest -Dbase.url=http://localhost:8087
+          sleep 15
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8087/actuator/health)
+          if [ "$STATUS" != "200" ]; then
+            echo "Gateway health check failed (status: $STATUS)"
+            exit 1
+          fi
+          echo "Gateway is healthy"

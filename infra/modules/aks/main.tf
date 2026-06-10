@@ -13,6 +13,7 @@ resource "azurerm_resource_group" "staging" {
 }
 
 resource "azurerm_log_analytics_workspace" "staging" {
+  depends_on          = [azurerm_resource_group.staging]
   name                = "circleguard-logs-${var.environment_tag}"
   location            = var.location
   resource_group_name = var.resource_group
@@ -25,7 +26,8 @@ resource "azurerm_kubernetes_cluster" "staging" {
   location            = var.location
   resource_group_name = var.resource_group
   dns_prefix          = var.dns_prefix
-  kubernetes_version  = "1.31"
+  kubernetes_version  = "1.34.8"
+  oidc_issuer_enabled = true
 
   default_node_pool {
     name                = "system"

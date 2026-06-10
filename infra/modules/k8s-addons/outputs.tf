@@ -8,9 +8,14 @@ output "cert_manager_status" {
   value       = length(helm_release.cert_manager) > 0 ? helm_release.cert_manager[0].status : "disabled"
 }
 
-output "prometheus_stack_status" {
-  description = "kube-prometheus-stack helm release status"
-  value       = length(helm_release.prometheus_stack) > 0 ? helm_release.prometheus_stack[0].status : "disabled"
+output "prometheus_status" {
+  description = "Prometheus helm release status"
+  value       = length(helm_release.prometheus) > 0 ? helm_release.prometheus[0].status : "disabled"
+}
+
+output "grafana_status" {
+  description = "Grafana helm release status"
+  value       = length(helm_release.grafana) > 0 ? helm_release.grafana[0].status : "disabled"
 }
 
 output "elasticsearch_status" {
@@ -53,7 +58,8 @@ output "addons_summary" {
   value = {
     sealed_secrets    = length(helm_release.sealed_secrets) > 0 ? "kube-system" : null
     cert_manager      = length(helm_release.cert_manager) > 0 ? "cert-manager" : null
-    prometheus        = length(helm_release.prometheus_stack) > 0 ? "monitoring" : null
+    prometheus        = length(helm_release.prometheus) > 0 ? "monitoring" : null
+    grafana           = length(helm_release.grafana) > 0 ? "monitoring" : null
     elasticsearch     = length(helm_release.elasticsearch) > 0 ? "logging" : null
     kibana            = length(helm_release.kibana) > 0 ? "logging" : null
     jaeger            = length(helm_release.jaeger) > 0 ? "tracing" : null

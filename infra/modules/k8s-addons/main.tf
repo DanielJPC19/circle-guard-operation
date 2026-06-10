@@ -8,12 +8,12 @@ terraform {
 }
 
 resource "helm_release" "sealed_secrets" {
-  count            = var.enable_sealed_secrets ? 1 : 0
-  name             = "sealed-secrets"
-  repository       = "https://bitnami-labs.github.io/sealed-secrets"
-  chart            = "sealed-secrets"
-  version          = "2.15.4"
-  namespace        = "kube-system"
+  count      = var.enable_sealed_secrets ? 1 : 0
+  name       = "sealed-secrets"
+  repository = "https://bitnami-labs.github.io/sealed-secrets"
+  chart      = "sealed-secrets"
+  version    = "2.15.4"
+  namespace  = "kube-system"
 }
 
 resource "helm_release" "cert_manager" {
@@ -168,33 +168,33 @@ resource "helm_release" "istio_base" {
 }
 
 resource "helm_release" "istiod" {
-  depends_on       = [helm_release.istio_base]
-  count            = var.enable_istio ? 1 : 0
-  name             = "istiod"
-  repository       = "https://istio-release.storage.googleapis.com/charts"
-  chart            = "istiod"
-  version          = "1.22.8"
-  namespace        = "istio-system"
+  depends_on = [helm_release.istio_base]
+  count      = var.enable_istio ? 1 : 0
+  name       = "istiod"
+  repository = "https://istio-release.storage.googleapis.com/charts"
+  chart      = "istiod"
+  version    = "1.22.8"
+  namespace  = "istio-system"
 }
 
 resource "helm_release" "istio_ingress" {
-  depends_on       = [helm_release.istiod]
-  count            = var.enable_istio ? 1 : 0
-  name             = "istio-ingressgateway"
-  repository       = "https://istio-release.storage.googleapis.com/charts"
-  chart            = "gateway"
-  version          = "1.22.8"
-  namespace        = "istio-system"
+  depends_on = [helm_release.istiod]
+  count      = var.enable_istio ? 1 : 0
+  name       = "istio-ingressgateway"
+  repository = "https://istio-release.storage.googleapis.com/charts"
+  chart      = "gateway"
+  version    = "1.22.8"
+  namespace  = "istio-system"
 }
 
 resource "helm_release" "kiali" {
-  depends_on       = [helm_release.istiod]
-  count            = var.enable_istio ? 1 : 0
-  name             = "kiali-server"
-  repository       = "https://kiali.org/helm-charts"
-  chart            = "kiali-server"
-  version          = "1.87.0"
-  namespace        = "istio-system"
+  depends_on = [helm_release.istiod]
+  count      = var.enable_istio ? 1 : 0
+  name       = "kiali-server"
+  repository = "https://kiali.org/helm-charts"
+  chart      = "kiali-server"
+  version    = "1.87.0"
+  namespace  = "istio-system"
 }
 
 resource "helm_release" "chaos_mesh" {

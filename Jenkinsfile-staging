@@ -54,7 +54,7 @@ pipeline {
             }
         }
 
-        // ── Stage 2: Crear/verificar namespace (idempotente) ────────────────────
+        // ── Stage 2: Crear/verificar namespace + instalar addons ───────────────
         stage('Create Namespace') {
             steps {
                 sh '''
@@ -63,6 +63,31 @@ pipeline {
                     kubectl apply -f k8s/namespaces/circleguard-stage.yml
                     echo "==> Limpiando pods Pending de runs anteriores fallidos..."
                     kubectl delete pods -n $NAMESPACE --field-selector=status.phase=Pending --ignore-not-found=true 2>/dev/null || true
+
+                    echo "==> Instalando cert-manager si no está presente..."
+                    if ! helm status cert-manager -n cert-manager >/dev/null 2>&1; then
+                        helm repo add jetstack https://charts.jetstack.io --force-update
+                        helm install cert-manager jetstack/cert-manager \
+                            --namespace cert-manager \
+                            --create-namespace \
+                            --version v1.15.5 \
+                            --set installCRDs=true \
+                            --wait --timeout 300s
+                    else
+                        echo "==> cert-manager ya está instalado — skipping"
+                    fi
+
+                    echo "==> Instalando sealed-secrets si no está presente..."
+                    if ! helm status sealed-secrets -n kube-system >/dev/null 2>&1; then
+                        helm repo add sealed-secrets https://bitnami-labs.github.io/sealed-secrets --force-update
+                        helm install sealed-secrets sealed-secrets/sealed-secrets \
+                            --namespace kube-system \
+                            --version 2.15.4 \
+                            --wait --timeout 300s
+                    else
+                        echo "==> sealed-secrets ya está instalado — skipping"
+                    fi
+
                     echo "==> Namespace $NAMESPACE listo"
                 '''
             }

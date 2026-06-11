@@ -39,6 +39,12 @@ resource "azurerm_kubernetes_cluster" "staging" {
     os_disk_size_gb     = 30
     max_pods            = 50
 
+    upgrade_settings {
+      drain_timeout_in_minutes      = 0
+      max_surge                     = "10%"
+      node_soak_duration_in_minutes = 0
+    }
+
     node_labels = {
       environment = var.environment_tag
     }

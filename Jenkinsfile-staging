@@ -21,7 +21,7 @@ pipeline {
         K8S_DIR          = 'k8s/services/stage'
         INFRA_DIR        = 'k8s/infra'
         SERVICES         = 'auth-service identity-service promotion-service gateway-service notification-service form-service'
-        ROLLOUT_TIMEOUT  = '300'
+        ROLLOUT_TIMEOUT  = '600'
         AZ_TENANT_ID     = credentials('az-tenant-id')
     }
 
@@ -182,8 +182,6 @@ pipeline {
 
                     for (int i = 0; i < servicesList.size(); i++) {
                         def svc = servicesList[i]
-                        // Restart fuerza el pick-up del nuevo image tag
-                        sh "kubectl rollout restart deployment/${svc} -n ${env.NAMESPACE}"
                         def result = sh(
                             script: "kubectl rollout status deployment/${svc} -n ${env.NAMESPACE} --timeout=${env.ROLLOUT_TIMEOUT}s",
                             returnStatus: true

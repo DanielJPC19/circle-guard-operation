@@ -144,9 +144,9 @@ pipeline {
                         --from-literal=POSTGRES_PASSWORD=password \
                         --from-literal=NEO4J_PASSWORD=password \
                         --from-literal=JWT_SECRET=circleguard-demo-jwt-secret-key-for-dev \
-                        --from-literal=QR_SECRET=circleguard-demo-qr-secret-key \
-                        --from-literal=VAULT_SECRET=circleguard-demo-vault-secret \
-                        --from-literal=VAULT_SALT=circleguard-demo-vault-salt \
+                        --from-literal=QR_SECRET=circleguard-demo-qr-secret-key-staging \
+                        --from-literal=VAULT_SECRET=circleguard-demo-vault-secret-staging \
+                        --from-literal=VAULT_SALT=circleguard-demo-vault-salt-staging-ok \
                         --from-literal=VAULT_HASH_SALT=circleguard-demo-vault-hash-salt \
                         --from-literal=LDAP_MANAGER_PASSWORD=password \
                         --dry-run=client -o yaml | kubectl apply -f -

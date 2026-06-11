@@ -242,6 +242,7 @@ pipeline {
                                 sh(script: "kubectl get pods -n ${env.NAMESPACE} -l app=${svc} -o wide", returnStatus: true)
                                 sh(script: "kubectl describe pods -n ${env.NAMESPACE} -l app=${svc} | tail -50", returnStatus: true)
                                 sh(script: "kubectl logs -n ${env.NAMESPACE} -l app=${svc} --tail=80 2>/dev/null || true", returnStatus: true)
+                                sh(script: "echo '==> Logs del crash anterior (--previous):' && kubectl logs -n ${env.NAMESPACE} -l app=${svc} --previous --tail=100 2>/dev/null || echo 'No hay crash anterior'", returnStatus: true)
                                 echo "==> ROLLBACK: deployment/${svc} — revertiendo..."
                                 sh(script: "kubectl rollout undo deployment/${svc} -n ${env.NAMESPACE}", returnStatus: true)
                                 error("Rollout fallido para: ${svc} — rollback automático aplicado")

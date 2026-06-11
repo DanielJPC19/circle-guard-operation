@@ -11,7 +11,7 @@ data:
   KAFKA_BOOTSTRAP_SERVERS: "circleguard-kafka.circleguard-stage.svc.cluster.local:9092"
   KAFKA_BROKERS: "circleguard-kafka.circleguard-stage.svc.cluster.local:9092"
 
-  REDIS_HOST: "circleguard-redis.circleguard-stage.svc.cluster.local"
+  REDIS_HOST: "circleguard-redis-master.circleguard-stage.svc.cluster.local"
   REDIS_PORT: "6379"
 
   NEO4J_URI: "bolt://circleguard-neo4j.circleguard-stage.svc.cluster.local:7687"

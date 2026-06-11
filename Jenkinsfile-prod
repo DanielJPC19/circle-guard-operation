@@ -61,6 +61,8 @@ pipeline {
                     echo "==> Creando namespace $NAMESPACE si no existe (idempotente)..."
                     kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
                     kubectl apply -f k8s/namespaces/circleguard-prod.yml
+                    echo "==> Limpiando pods Pending de runs anteriores fallidos..."
+                    kubectl delete pods -n $NAMESPACE --field-selector=status.phase=Pending --ignore-not-found=true 2>/dev/null || true
                     echo "==> Namespace $NAMESPACE listo"
                 '''
             }

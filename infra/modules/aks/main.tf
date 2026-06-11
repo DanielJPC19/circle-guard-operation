@@ -37,6 +37,7 @@ resource "azurerm_kubernetes_cluster" "staging" {
     min_count           = var.min_count
     max_count           = var.max_count
     os_disk_size_gb     = 30
+    max_pods            = 50
 
     node_labels = {
       environment = var.environment_tag

@@ -229,7 +229,6 @@ pipeline {
                 script {
                     def servicesList = env.SERVICES.tokenize(' ')
                     def branches = [:]
-                    def failed = [].asSynchronized()
 
                     servicesList.each { svcName ->
                         def svc = svcName
@@ -245,7 +244,7 @@ pipeline {
                                 sh(script: "kubectl logs -n ${env.NAMESPACE} -l app=${svc} --tail=80 2>/dev/null || true", returnStatus: true)
                                 echo "==> ROLLBACK: deployment/${svc} — revertiendo..."
                                 sh(script: "kubectl rollout undo deployment/${svc} -n ${env.NAMESPACE}", returnStatus: true)
-                                failed.add(svc)
+                                error("Rollout fallido para: ${svc} — rollback automático aplicado")
                             } else {
                                 echo "==> OK: deployment/${svc} desplegado correctamente"
                             }
@@ -253,10 +252,6 @@ pipeline {
                     }
 
                     parallel branches
-
-                    if (!failed.isEmpty()) {
-                        error("Rollout fallido para: ${failed.join(', ')} — rollback automático aplicado")
-                    }
                 }
             }
         }

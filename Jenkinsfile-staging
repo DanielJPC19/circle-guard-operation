@@ -39,7 +39,7 @@ pipeline {
                         az login --service-principal \
                             -u $AZ_CLIENT_ID \
                             -p $AZ_CLIENT_SECRET \
-                            --tenant $(az account show --query tenantId -o tsv 2>/dev/null || echo $AZ_TENANT_ID)
+                            --tenant $AZ_TENANT_ID
 
                         az aks get-credentials \
                             --resource-group $AKS_RG \
@@ -79,7 +79,10 @@ pipeline {
                     echo "==> Esperando que Redis esté listo..."
                     kubectl rollout status deployment/redis -n $NAMESPACE --timeout=60s
 
-                    echo "==> Esperando que Kafka esté listo..."
+                    echo "==> Esperando que Kafka Zookeeper esté listo..."
+                    kubectl rollout status deployment/kafka-zookeeper -n $NAMESPACE --timeout=120s
+
+                    echo "==> Esperando que Kafka Broker esté listo..."
                     kubectl rollout status deployment/kafka-broker -n $NAMESPACE --timeout=180s
 
                     echo "==> Esperando que Neo4j esté listo..."
@@ -96,7 +99,7 @@ pipeline {
         // ── Stage 4: Aplicar ConfigMaps ──────────────────────────────────────────
         stage('Apply ConfigMaps') {
             steps {
-                sh 'kubectl apply -f k8s/configmaps/configmap-infra.yml'
+                sh 'kubectl apply -f k8s/configmaps/configmap-infra-stage.yml'
             }
         }
 
@@ -254,7 +257,7 @@ pipeline {
                     echo "==> Esperando 300 segundos para observar comportamiento..."
                     sleep 300
                     echo "==> Verificando estado de pods después del chaos..."
-                    kubectl get pods -n circleguard-stage
+                    kubectl get pods -n $NAMESPACE
                     echo "==> Eliminando experimentos de chaos..."
                     kubectl delete -f chaos/pod-chaos.yml
                     kubectl delete -f chaos/network-chaos.yml

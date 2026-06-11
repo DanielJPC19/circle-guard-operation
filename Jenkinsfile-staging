@@ -63,6 +63,11 @@ pipeline {
                     kubectl apply -f k8s/namespaces/circleguard-stage.yml
                     echo "==> Limpiando pods Pending de runs anteriores fallidos..."
                     kubectl delete pods -n $NAMESPACE --field-selector=status.phase=Pending --ignore-not-found=true 2>/dev/null || true
+                    echo "==> Limpiando ReplicaSets viejos con 0 réplicas..."
+                    OLD_RS=$(kubectl get rs -n $NAMESPACE -o jsonpath='{.items[?(@.spec.replicas==0)].metadata.name}' 2>/dev/null || true)
+                    if [ -n "$OLD_RS" ]; then
+                        kubectl delete replicaset -n $NAMESPACE $OLD_RS --ignore-not-found=true 2>/dev/null || true
+                    fi
 
                     echo "==> Instalando cert-manager si no está presente..."
                     if ! helm status cert-manager -n cert-manager >/dev/null 2>&1; then

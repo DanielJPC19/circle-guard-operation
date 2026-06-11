@@ -38,7 +38,7 @@ if [ ! -f "$MANIFEST" ]; then
     exit 1
 fi
 
-ACR_REGISTRY="cgregistry.azurecr.io"
+ACR_REGISTRY="cgregicesi.azurecr.io"
 IMAGE_PATTERN="${ACR_REGISTRY}/circleguard/circleguard-${SERVICE}"
 
 sed -i "s|image: ${IMAGE_PATTERN}:.*|image: ${IMAGE_PATTERN}:${TAG}|g" "$MANIFEST"

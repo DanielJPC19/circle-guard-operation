@@ -22,7 +22,7 @@ pipeline {
         SERVICES         = 'auth-service identity-service promotion-service gateway-service notification-service form-service'
         ROLLOUT_TIMEOUT  = '300'
         GITHUB_REPO      = 'circleguard-development'
-        SLACK_WEBHOOK    = credentials('slack-webhook-prod')
+        AZ_TENANT_ID     = credentials('az-tenant-id')
     }
 
     stages {
@@ -125,10 +125,7 @@ pipeline {
             steps {
                 sh '''
                     for SERVICE in $SERVICES; do
-                        bash scripts/update-image-tag.sh \
-                            $K8S_DIR/all-services.yml \
-                            $ACR_REGISTRY/circleguard/circleguard-${SERVICE} \
-                            $IMAGE_TAG
+                        bash scripts/update-image-tag.sh $SERVICE $IMAGE_TAG prod
                     done
                     echo "==> Image tags actualizados a $IMAGE_TAG en $K8S_DIR/all-services.yml"
                 '''
@@ -328,54 +325,27 @@ Jenkins build: ${env.BUILD_URL}
                 echo "==> Ver logs: kubectl logs -n ${env.NAMESPACE} deployment/<servicio>"
                 echo "==> Estado actual: kubectl get pods -n ${env.NAMESPACE}"
 
-                // Send Slack notification
-                def slackMessage = """{
-                    "text": "🔴 Production Deployment FAILED",
-                    "blocks": [
-                        {
-                            "type": "header",
-                            "text": {
-                                "type": "plain_text",
-                                "text": "🔴 Production Deployment Failed",
-                                "emoji": true
-                            }
-                        },
-                        {
-                            "type": "section",
-                            "fields": [
+                try {
+                    withCredentials([string(credentialsId: 'slack-webhook-prod', variable: 'SLACK_WEBHOOK')]) {
+                        def slackMessage = """{
+                            "text": "Production Deployment FAILED",
+                            "blocks": [
                                 {
-                                    "type": "mrkdwn",
-                                    "text": "*Status:*\nFAILED - Automatic Rollback Applied"
-                                },
-                                {
-                                    "type": "mrkdwn",
-                                    "text": "*Image Tag:*\n${params.IMAGE_TAG}"
-                                },
-                                {
-                                    "type": "mrkdwn",
-                                    "text": "*Environment:*\n${params.ENVIRONMENT}"
-                                },
-                                {
-                                    "type": "mrkdwn",
-                                    "text": "*Build:*\n<${env.BUILD_URL}|Jenkins Build #${env.BUILD_NUMBER}>"
+                                    "type": "section",
+                                    "fields": [
+                                        {"type": "mrkdwn", "text": "*Status:*\\nFAILED - Automatic Rollback Applied"},
+                                        {"type": "mrkdwn", "text": "*Image Tag:*\\n${params.IMAGE_TAG}"},
+                                        {"type": "mrkdwn", "text": "*Environment:*\\n${params.ENVIRONMENT}"},
+                                        {"type": "mrkdwn", "text": "*Build:*\\n<${env.BUILD_URL}|Jenkins Build #${env.BUILD_NUMBER}>"}
+                                    ]
                                 }
                             ]
-                        },
-                        {
-                            "type": "section",
-                            "text": {
-                                "type": "mrkdwn",
-                                "text": "*Action Required:*\n• Review logs: \`kubectl logs -n ${env.NAMESPACE} deployment/<service>\`\n• Check pod status: \`kubectl get pods -n ${env.NAMESPACE}\`\n• Rollback has been automatically applied"
-                            }
-                        }
-                    ]
-                }"""
-
-                sh '''
-                    curl -X POST "${SLACK_WEBHOOK}" \
-                        -H 'Content-Type: application/json' \
-                        -d ''' + "'" + slackMessage + "'" + '''
-                '''
+                        }"""
+                        sh """curl -s -X POST '${SLACK_WEBHOOK}' -H 'Content-Type: application/json' -d '${slackMessage}'"""
+                    }
+                } catch (e) {
+                    echo "==> Slack notification skipped: ${e.message}"
+                }
             }
         }
         always {

@@ -22,6 +22,7 @@ pipeline {
         INFRA_DIR        = 'k8s/infra'
         SERVICES         = 'auth-service identity-service promotion-service gateway-service notification-service form-service'
         ROLLOUT_TIMEOUT  = '300'
+        AZ_TENANT_ID     = credentials('az-tenant-id')
     }
 
     stages {
@@ -124,10 +125,7 @@ pipeline {
             steps {
                 sh '''
                     for SERVICE in $SERVICES; do
-                        bash scripts/update-image-tag.sh \
-                            $K8S_DIR/all-services.yml \
-                            $ACR_REGISTRY/circleguard/circleguard-${SERVICE} \
-                            $IMAGE_TAG
+                        bash scripts/update-image-tag.sh $SERVICE $IMAGE_TAG staging
                     done
                     echo "==> Image tags actualizados a $IMAGE_TAG en $K8S_DIR/all-services.yml"
                 '''

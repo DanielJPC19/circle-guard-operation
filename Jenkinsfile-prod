@@ -63,6 +63,11 @@ pipeline {
                     kubectl apply -f k8s/namespaces/circleguard-prod.yml
                     echo "==> Limpiando pods Pending de runs anteriores fallidos..."
                     kubectl delete pods -n $NAMESPACE --field-selector=status.phase=Pending --ignore-not-found=true 2>/dev/null || true
+                    echo "==> Limpiando ReplicaSets viejos con 0 réplicas..."
+                    OLD_RS=$(kubectl get rs -n $NAMESPACE -o jsonpath='{.items[?(@.spec.replicas==0)].metadata.name}' 2>/dev/null || true)
+                    if [ -n "$OLD_RS" ]; then
+                        kubectl delete replicaset -n $NAMESPACE $OLD_RS --ignore-not-found=true 2>/dev/null || true
+                    fi
                     echo "==> Namespace $NAMESPACE listo"
                 '''
             }
@@ -157,31 +162,36 @@ pipeline {
             }
         }
 
-        // ── Stage 9: Verificar rollout + auto-rollback ───────────────────────────
+        // ── Stage 9: Verificar rollout + auto-rollback (paralelo) ───────────────
         stage('Rollout Verification') {
             steps {
                 script {
                     def servicesList = env.SERVICES.tokenize(' ')
-                    def failed = []
+                    def branches = [:]
 
-                    for (int i = 0; i < servicesList.size(); i++) {
-                        def svc = servicesList[i]
-                        def result = sh(
-                            script: "kubectl rollout status deployment/${svc} -n ${env.NAMESPACE} --timeout=${env.ROLLOUT_TIMEOUT}s",
-                            returnStatus: true
-                        )
-                        if (result != 0) {
-                            echo "==> ROLLBACK: deployment/${svc} falló — revertiendo..."
-                            sh "kubectl rollout undo deployment/${svc} -n ${env.NAMESPACE}"
-                            failed.add(svc)
-                        } else {
-                            echo "==> OK: deployment/${svc} desplegado correctamente"
+                    servicesList.each { svcName ->
+                        def svc = svcName
+                        branches[svc] = {
+                            def result = sh(
+                                script: "kubectl rollout status deployment/${svc} -n ${env.NAMESPACE} --timeout=${env.ROLLOUT_TIMEOUT}s",
+                                returnStatus: true
+                            )
+                            if (result != 0) {
+                                echo "==> DIAGNÓSTICO: deployment/${svc} no llegó a Ready — investigando..."
+                                sh(script: "kubectl get pods -n ${env.NAMESPACE} -l app=${svc} -o wide", returnStatus: true)
+                                sh(script: "kubectl describe pods -n ${env.NAMESPACE} -l app=${svc} | tail -50", returnStatus: true)
+                                sh(script: "kubectl logs -n ${env.NAMESPACE} -l app=${svc} --tail=80 2>/dev/null || true", returnStatus: true)
+                                sh(script: "echo '==> Logs del crash anterior (--previous):' && kubectl logs -n ${env.NAMESPACE} -l app=${svc} --previous --tail=100 2>/dev/null || echo 'No hay crash anterior'", returnStatus: true)
+                                echo "==> ROLLBACK: deployment/${svc} — revertiendo..."
+                                sh(script: "kubectl rollout undo deployment/${svc} -n ${env.NAMESPACE}", returnStatus: true)
+                                error("Rollout fallido para: ${svc} — rollback automático aplicado")
+                            } else {
+                                echo "==> OK: deployment/${svc} desplegado correctamente"
+                            }
                         }
                     }
 
-                    if (!failed.isEmpty()) {
-                        error("Rollout de producción fallido para: ${failed.join(', ')} — rollback automático aplicado")
-                    }
+                    parallel branches
                 }
             }
         }

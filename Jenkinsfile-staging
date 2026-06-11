@@ -88,6 +88,11 @@ pipeline {
                         echo "==> sealed-secrets ya está instalado — skipping"
                     fi
 
+                    echo "==> Diagnóstico de capacidad del nodo..."
+                    kubectl describe node | grep -E "Taints:|pods:" | head -5 || true
+                    echo "==> Total pods en el cluster:"
+                    kubectl get pods -A --no-headers | wc -l
+
                     echo "==> Namespace $NAMESPACE listo"
                 '''
             }
@@ -130,10 +135,23 @@ pipeline {
             }
         }
 
-        // ── Stage 5: Aplicar Sealed Secrets ─────────────────────────────────────
+        // ── Stage 5: Crear Secret de aplicación ─────────────────────────────────
         stage('Apply Sealed Secrets') {
             steps {
-                sh 'kubectl apply -f k8s/secrets/sealed-secret-stage.yml'
+                sh '''
+                    kubectl create secret generic circleguard-secret \
+                        -n $NAMESPACE \
+                        --from-literal=POSTGRES_PASSWORD=password \
+                        --from-literal=NEO4J_PASSWORD=password \
+                        --from-literal=JWT_SECRET=circleguard-demo-jwt-secret-key-for-dev \
+                        --from-literal=QR_SECRET=circleguard-demo-qr-secret-key \
+                        --from-literal=VAULT_SECRET=circleguard-demo-vault-secret \
+                        --from-literal=VAULT_SALT=circleguard-demo-vault-salt \
+                        --from-literal=VAULT_HASH_SALT=circleguard-demo-vault-hash-salt \
+                        --from-literal=LDAP_MANAGER_PASSWORD=password \
+                        --dry-run=client -o yaml | kubectl apply -f -
+                    echo "==> Secret circleguard-secret aplicado"
+                '''
             }
         }
 

@@ -10,7 +10,7 @@ metadata:
     version: v1
     environment: production
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: auth-service
@@ -50,11 +50,11 @@ spec:
               value: "jdbc:postgresql://$(POSTGRES_HOST):$(POSTGRES_PORT)/circleguard_auth"
           resources:
             requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
               memory: "512Mi"
               cpu: "500m"
-            limits:
-              memory: "1Gi"
-              cpu: "1000m"
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
@@ -93,8 +93,8 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: auth-service
-  minReplicas: 2
-  maxReplicas: 8
+  minReplicas: 1
+  maxReplicas: 4
   metrics:
     - type: Resource
       resource:
@@ -115,7 +115,7 @@ metadata:
     version: v1
     environment: production
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: identity-service
@@ -155,11 +155,11 @@ spec:
               value: "jdbc:postgresql://$(POSTGRES_HOST):$(POSTGRES_PORT)/circleguard_identity"
           resources:
             requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
               memory: "512Mi"
               cpu: "500m"
-            limits:
-              memory: "1Gi"
-              cpu: "1000m"
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
@@ -196,8 +196,8 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: identity-service
-  minReplicas: 2
-  maxReplicas: 8
+  minReplicas: 1
+  maxReplicas: 4
   metrics:
     - type: Resource
       resource:
@@ -218,7 +218,7 @@ metadata:
     version: v1
     environment: production
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: promotion-service
@@ -267,11 +267,11 @@ spec:
                   key: NEO4J_PASSWORD
           resources:
             requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
               memory: "512Mi"
               cpu: "500m"
-            limits:
-              memory: "1Gi"
-              cpu: "1000m"
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
@@ -308,8 +308,8 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: promotion-service
-  minReplicas: 2
-  maxReplicas: 8
+  minReplicas: 1
+  maxReplicas: 4
   metrics:
     - type: Resource
       resource:
@@ -330,7 +330,7 @@ metadata:
     version: v1
     environment: production
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: gateway-service
@@ -370,11 +370,11 @@ spec:
               value: "jdbc:postgresql://$(POSTGRES_HOST):$(POSTGRES_PORT)/circleguard_gateway"
           resources:
             requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
               memory: "512Mi"
               cpu: "500m"
-            limits:
-              memory: "1Gi"
-              cpu: "1000m"
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
@@ -411,8 +411,8 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: gateway-service
-  minReplicas: 2
-  maxReplicas: 8
+  minReplicas: 1
+  maxReplicas: 4
   metrics:
     - type: Resource
       resource:
@@ -433,7 +433,7 @@ metadata:
     version: v1
     environment: production
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: notification-service
@@ -471,11 +471,11 @@ spec:
               value: "8082"
           resources:
             requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
               memory: "512Mi"
               cpu: "500m"
-            limits:
-              memory: "1Gi"
-              cpu: "1000m"
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
@@ -512,8 +512,8 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: notification-service
-  minReplicas: 2
-  maxReplicas: 8
+  minReplicas: 1
+  maxReplicas: 4
   metrics:
     - type: Resource
       resource:
@@ -534,7 +534,7 @@ metadata:
     version: v1
     environment: production
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: form-service
@@ -574,11 +574,11 @@ spec:
               value: "jdbc:postgresql://$(POSTGRES_HOST):$(POSTGRES_PORT)/circleguard_form"
           resources:
             requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
               memory: "512Mi"
               cpu: "500m"
-            limits:
-              memory: "1Gi"
-              cpu: "1000m"
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
@@ -615,8 +615,8 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: form-service
-  minReplicas: 2
-  maxReplicas: 8
+  minReplicas: 1
+  maxReplicas: 4
   metrics:
     - type: Resource
       resource:

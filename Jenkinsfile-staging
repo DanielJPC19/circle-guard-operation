@@ -151,7 +151,7 @@ pipeline {
                         --from-literal=JWT_SECRET=circleguard-demo-jwt-secret-key-for-dev \
                         --from-literal=QR_SECRET=circleguard-demo-qr-secret-key-staging \
                         --from-literal=VAULT_SECRET=circleguard-demo-vault-secret-staging \
-                        --from-literal=VAULT_SALT=circleguard-demo-vault-salt-staging-ok \
+                        --from-literal=VAULT_SALT=deadbeef \
                         --from-literal=VAULT_HASH_SALT=circleguard-demo-vault-hash-salt \
                         --from-literal=LDAP_MANAGER_PASSWORD=password \
                         --dry-run=client -o yaml | kubectl apply -f -
@@ -223,31 +223,36 @@ pipeline {
             }
         }
 
-        // ── Stage 10: Verificar rollout + auto-rollback ───────────────────────────
+        // ── Stage 10: Verificar rollout + auto-rollback (paralelo) ──────────────
         stage('Rollout Verification') {
             steps {
                 script {
                     def servicesList = env.SERVICES.tokenize(' ')
-                    def failed = []
+                    def branches = [:]
+                    def failed = [].asSynchronized()
 
-                    for (int i = 0; i < servicesList.size(); i++) {
-                        def svc = servicesList[i]
-                        def result = sh(
-                            script: "kubectl rollout status deployment/${svc} -n ${env.NAMESPACE} --timeout=${env.ROLLOUT_TIMEOUT}s",
-                            returnStatus: true
-                        )
-                        if (result != 0) {
-                            echo "==> DIAGNÓSTICO: deployment/${svc} no llegó a Ready — investigando..."
-                            sh(script: "kubectl get pods -n ${env.NAMESPACE} -l app=${svc} -o wide", returnStatus: true)
-                            sh(script: "kubectl describe pods -n ${env.NAMESPACE} -l app=${svc} | tail -50", returnStatus: true)
-                            sh(script: "kubectl logs -n ${env.NAMESPACE} -l app=${svc} --tail=80 2>/dev/null || true", returnStatus: true)
-                            echo "==> ROLLBACK: deployment/${svc} — revertiendo..."
-                            sh(script: "kubectl rollout undo deployment/${svc} -n ${env.NAMESPACE}", returnStatus: true)
-                            failed.add(svc)
-                        } else {
-                            echo "==> OK: deployment/${svc} desplegado correctamente"
+                    servicesList.each { svcName ->
+                        def svc = svcName
+                        branches[svc] = {
+                            def result = sh(
+                                script: "kubectl rollout status deployment/${svc} -n ${env.NAMESPACE} --timeout=${env.ROLLOUT_TIMEOUT}s",
+                                returnStatus: true
+                            )
+                            if (result != 0) {
+                                echo "==> DIAGNÓSTICO: deployment/${svc} no llegó a Ready — investigando..."
+                                sh(script: "kubectl get pods -n ${env.NAMESPACE} -l app=${svc} -o wide", returnStatus: true)
+                                sh(script: "kubectl describe pods -n ${env.NAMESPACE} -l app=${svc} | tail -50", returnStatus: true)
+                                sh(script: "kubectl logs -n ${env.NAMESPACE} -l app=${svc} --tail=80 2>/dev/null || true", returnStatus: true)
+                                echo "==> ROLLBACK: deployment/${svc} — revertiendo..."
+                                sh(script: "kubectl rollout undo deployment/${svc} -n ${env.NAMESPACE}", returnStatus: true)
+                                failed.add(svc)
+                            } else {
+                                echo "==> OK: deployment/${svc} desplegado correctamente"
+                            }
                         }
                     }
+
+                    parallel branches
 
                     if (!failed.isEmpty()) {
                         error("Rollout fallido para: ${failed.join(', ')} — rollback automático aplicado")

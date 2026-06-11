@@ -219,7 +219,7 @@ pipeline {
                             sh(script: "kubectl describe pods -n ${env.NAMESPACE} -l app=${svc} | tail -50", returnStatus: true)
                             sh(script: "kubectl logs -n ${env.NAMESPACE} -l app=${svc} --tail=80 2>/dev/null || true", returnStatus: true)
                             echo "==> ROLLBACK: deployment/${svc} — revertiendo..."
-                            sh "kubectl rollout undo deployment/${svc} -n ${env.NAMESPACE}"
+                            sh(script: "kubectl rollout undo deployment/${svc} -n ${env.NAMESPACE}", returnStatus: true)
                             failed.add(svc)
                         } else {
                             echo "==> OK: deployment/${svc} desplegado correctamente"

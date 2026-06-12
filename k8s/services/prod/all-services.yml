@@ -54,6 +54,12 @@ spec:
               value: "8180"
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:postgresql://$(POSTGRES_HOST):$(POSTGRES_PORT)/circleguard_auth"
+            - name: SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT
+              value: "30000"
+            - name: SPRING_FLYWAY_CONNECT_RETRIES
+              value: "5"
+            - name: SPRING_FLYWAY_CONNECT_RETRIES_INTERVAL
+              value: "5"
           resources:
             requests:
               memory: "256Mi"
@@ -65,7 +71,7 @@ spec:
             httpGet:
               path: /actuator/health/liveness
               port: 8180
-            initialDelaySeconds: 120
+            initialDelaySeconds: 210
             periodSeconds: 30
             timeoutSeconds: 5
             failureThreshold: 3
@@ -73,7 +79,7 @@ spec:
             httpGet:
               path: /actuator/health/readiness
               port: 8180
-            initialDelaySeconds: 90
+            initialDelaySeconds: 180
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
@@ -167,6 +173,12 @@ spec:
               value: "8083"
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:postgresql://$(POSTGRES_HOST):$(POSTGRES_PORT)/circleguard_identity"
+            - name: SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT
+              value: "30000"
+            - name: SPRING_FLYWAY_CONNECT_RETRIES
+              value: "5"
+            - name: SPRING_FLYWAY_CONNECT_RETRIES_INTERVAL
+              value: "5"
           resources:
             requests:
               memory: "256Mi"
@@ -178,14 +190,14 @@ spec:
             httpGet:
               path: /actuator/health/liveness
               port: 8083
-            initialDelaySeconds: 120
+            initialDelaySeconds: 210
             periodSeconds: 30
             timeoutSeconds: 5
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
               port: 8083
-            initialDelaySeconds: 90
+            initialDelaySeconds: 180
             periodSeconds: 10
             timeoutSeconds: 5
 ---
@@ -278,6 +290,12 @@ spec:
               value: "8088"
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:postgresql://$(POSTGRES_HOST):$(POSTGRES_PORT)/circleguard_promotion"
+            - name: SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT
+              value: "30000"
+            - name: SPRING_FLYWAY_CONNECT_RETRIES
+              value: "5"
+            - name: SPRING_FLYWAY_CONNECT_RETRIES_INTERVAL
+              value: "5"
             - name: SPRING_NEO4J_URI
               value: "$(NEO4J_URI)"
             - name: SPRING_NEO4J_AUTHENTICATION_USERNAME
@@ -298,14 +316,14 @@ spec:
             httpGet:
               path: /actuator/health/liveness
               port: 8088
-            initialDelaySeconds: 150
+            initialDelaySeconds: 240
             periodSeconds: 30
             timeoutSeconds: 5
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
               port: 8088
-            initialDelaySeconds: 120
+            initialDelaySeconds: 210
             periodSeconds: 10
             timeoutSeconds: 5
 ---
@@ -398,6 +416,12 @@ spec:
               value: "8087"
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:postgresql://$(POSTGRES_HOST):$(POSTGRES_PORT)/circleguard_gateway"
+            - name: SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT
+              value: "30000"
+            - name: SPRING_FLYWAY_CONNECT_RETRIES
+              value: "5"
+            - name: SPRING_FLYWAY_CONNECT_RETRIES_INTERVAL
+              value: "5"
           resources:
             requests:
               memory: "256Mi"
@@ -507,6 +531,8 @@ spec:
               value: "prod"
             - name: SERVER_PORT
               value: "8082"
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: "$(KAFKA_BOOTSTRAP_SERVERS)"
           resources:
             requests:
               memory: "256Mi"
@@ -616,6 +642,14 @@ spec:
               value: "8086"
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:postgresql://$(POSTGRES_HOST):$(POSTGRES_PORT)/circleguard_form"
+            - name: SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT
+              value: "30000"
+            - name: SPRING_FLYWAY_CONNECT_RETRIES
+              value: "5"
+            - name: SPRING_FLYWAY_CONNECT_RETRIES_INTERVAL
+              value: "5"
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: "$(KAFKA_BOOTSTRAP_SERVERS)"
           resources:
             requests:
               memory: "256Mi"
@@ -627,14 +661,14 @@ spec:
             httpGet:
               path: /actuator/health/liveness
               port: 8086
-            initialDelaySeconds: 120
+            initialDelaySeconds: 210
             periodSeconds: 30
             timeoutSeconds: 5
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
               port: 8086
-            initialDelaySeconds: 90
+            initialDelaySeconds: 180
             periodSeconds: 10
             timeoutSeconds: 5
 ---

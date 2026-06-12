@@ -4,20 +4,20 @@ metadata:
   name: circleguard-infra-config
   namespace: circleguard-prod
 data:
-  POSTGRES_HOST: "circleguard-postgres"
+  POSTGRES_HOST: "circleguard-postgres.circleguard-prod.svc.cluster.local"
   POSTGRES_PORT: "5432"
   POSTGRES_USER: "admin"
 
-  KAFKA_BOOTSTRAP_SERVERS: "circleguard-kafka:9092"
-  KAFKA_BROKERS: "circleguard-kafka:9092"
+  KAFKA_BOOTSTRAP_SERVERS: "circleguard-kafka.circleguard-prod.svc.cluster.local:9092"
+  KAFKA_BROKERS: "circleguard-kafka.circleguard-prod.svc.cluster.local:9092"
 
-  REDIS_HOST: "circleguard-redis-master"
+  REDIS_HOST: "circleguard-redis-master.circleguard-prod.svc.cluster.local"
   REDIS_PORT: "6379"
 
-  NEO4J_URI: "bolt://circleguard-neo4j:7687"
+  NEO4J_URI: "bolt://circleguard-neo4j.circleguard-prod.svc.cluster.local:7687"
   NEO4J_USERNAME: "neo4j"
 
-  LDAP_URL: "ldap://circleguard-openldap:389"
+  LDAP_URL: "ldap://circleguard-openldap.circleguard-prod.svc.cluster.local:389"
   LDAP_BASE_DN: "dc=circleguard,dc=edu"
   LDAP_MANAGER_DN: "cn=admin,dc=circleguard,dc=edu"
 

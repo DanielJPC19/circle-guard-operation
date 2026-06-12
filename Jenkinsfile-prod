@@ -214,13 +214,18 @@ pipeline {
                     echo "==> Verificando que Service circleguard-postgres existe en $NAMESPACE..."
                     kubectl get svc circleguard-postgres -n $NAMESPACE \
                         || { echo "ERROR: Service circleguard-postgres no existe — Stage 3 (infra deploy) falló parcialmente."; exit 1; }
-                    echo "==> Todos los Services de infra:"
-                    kubectl get svc -n $NAMESPACE
+
+                    echo "==> Estado de CoreDNS en kube-system:"
+                    kubectl get pods -n kube-system -l k8s-app=kube-dns -o wide || true
+                    echo "==> Endpoints del servicio kube-dns:"
+                    kubectl get endpoints kube-dns -n kube-system || true
+                    echo "==> NetworkPolicy activa en $NAMESPACE:"
+                    kubectl get networkpolicy -n $NAMESPACE -o yaml || true
 
                     echo "==> Verificando DNS resolution desde pods en $NAMESPACE..."
                     DNS_POD="dns-verify-$BUILD_NUMBER"
                     kubectl run $DNS_POD --image=busybox:latest --restart=Never -n $NAMESPACE \
-                        -- sh -c "timeout 15 nslookup circleguard-postgres.$NAMESPACE.svc.cluster.local && echo DNS_OK || echo DNS_FAIL"
+                        -- sh -c "echo '=resolv.conf='; cat /etc/resolv.conf; echo '=nslookup='; timeout 15 nslookup circleguard-postgres.$NAMESPACE.svc.cluster.local && echo DNS_OK || echo DNS_FAIL"
                     for i in $(seq 1 10); do
                         PHASE=$(kubectl get pod $DNS_POD -n $NAMESPACE -o jsonpath='{.status.phase}' 2>/dev/null || echo "Unknown")
                         if [ "$PHASE" = "Succeeded" ] || [ "$PHASE" = "Failed" ]; then break; fi

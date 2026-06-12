@@ -20,31 +20,10 @@ spec:
     - Egress
   ingress:
     - from:
-        - namespaceSelector:
-            matchLabels:
-              environment: production
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: istio-system
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: ingress-nginx
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: kube-system
+        - namespaceSelector: {}
   egress:
     - to:
-        - namespaceSelector:
-            matchLabels:
-              environment: production
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: istio-system
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: kube-system
+        - namespaceSelector: {}
     - ports:
         - protocol: TCP
           port: 53

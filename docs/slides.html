@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CircleGuard — Slides de Sustentación v1.0.0</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: #f0f0f0;
+        }
+
+        .slides-container {
+            width: 100%;
+            max-width: 1400px;
+            aspect-ratio: 16 / 9;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+            overflow: hidden;
+            background: #1e1e2e;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 40px 70px;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            overflow: hidden; /* PROHIBIDO SCROLL */
+        }
+
+        .slide.visible {
+            display: flex;
+            opacity: 1;
+        }
+
+        /* Estilos de contenido */
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 30px;
+            color: #00d4ff;
+            text-shadow: 0 2px 10px rgba(0, 212, 255, 0.5);
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            margin-bottom: 25px;
+            margin-top: 0;
+            color: #00d4ff;
+            border-bottom: 3px solid #00d4ff;
+            padding-bottom: 15px;
+        }
+
+        h3 {
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            margin-top: 0;
+            color: #20c997;
+        }
+
+        p, li {
+            font-size: 1.3rem;
+            line-height: 1.7;
+            margin-bottom: 18px;
+            color: #e0e0e0;
+        }
+
+        ul {
+            margin-left: 30px;
+            list-style-type: none;
+            margin-bottom: 20px;
+        }
+
+        ul li:before {
+            content: "▶ ";
+            color: #00d4ff;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-bottom: 25px;
+            margin-top: 10px;
+        }
+
+        .status.done {
+            background: #28a745;
+            color: white;
+        }
+
+        .status.partial {
+            background: #fd7e14;
+            color: white;
+        }
+
+        /* Código - es el protagonista */
+        .code-block {
+            background: #0d1117;
+            border-left: 5px solid #00d4ff;
+            padding: 20px;
+            margin: 25px 0 0 0;
+            border-radius: 5px;
+            overflow: hidden; /* NO SCROLL NUNCA */
+            font-family: 'Courier New', monospace;
+            font-size: 1.4rem; /* GRANDE Y LEGIBLE */
+            line-height: 1.5;
+            flex: 0 1 auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .code-path {
+            color: #20c997;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .code-block pre {
+            margin: 0;
+            overflow: hidden;
+            flex: 0 1 auto;
+        }
+
+        .code-block code {
+            font-size: 1.4rem;
+            line-height: 1.5;
+        }
+
+        /* Title slide especial */
+        .title-slide {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: linear-gradient(135deg, #0d1117 0%, #1e1e2e 100%);
+        }
+
+        .title-slide h1 {
+            font-size: 4rem;
+            margin-bottom: 25px;
+        }
+
+        .title-slide p {
+            font-size: 1.6rem;
+            color: #20c997;
+            margin-bottom: 15px;
+            line-height: 1.8;
+        }
+
+        /* Tabla (cuando no haya código) */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 1.2rem;
+            margin: 25px 0;
+        }
+
+        th, td {
+            border: 1px solid #00d4ff;
+            padding: 12px;
+            text-align: left;
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        th {
+            background: rgba(0, 212, 255, 0.2);
+            color: #00d4ff;
+            font-weight: bold;
+        }
+
+        /* Images */
+        .slide img {
+            max-width: 92%;
+            max-height: 80vh;
+            object-fit: contain;
+            margin: 20px auto;
+            border-radius: 5px;
+            display: block;
+        }
+
+        /* Image-only slides */
+        .slide-image-only {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slide-image-only img {
+            max-width: 92%;
+            max-height: 80vh;
+            object-fit: contain;
+        }
+
+        /* Nav */
+        .slide-number {
+            position: absolute;
+            bottom: 20px;
+            right: 30px;
+            font-size: 1.2rem;
+            color: #888;
+            z-index: 10;
+        }
+
+        .nav-buttons {
+            position: absolute;
+            bottom: 20px;
+            left: 30px;
+            display: flex;
+            gap: 15px;
+            z-index: 10;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            background: #00d4ff;
+            color: #1e1e2e;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #20c997;
+            transform: scale(1.05);
+        }
+
+        @media print {
+            body { background: white; }
+            .slide { page-break-after: always; opacity: 1 !important; display: flex !important; }
+            .nav-buttons, .slide-number { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="slides-container" id="slidesContainer">
+        <!-- PORTADA -->
+        <div class="slide title-slide visible" data-slide="0">
+            <h1 style="font-size: 4.5rem;">CircleGuard</h1>
+            <p style="font-size: 1.8rem;">Plataforma de Microservicios<br/>para Monitoreo de Salud en Campus</p>
+            <hr style="margin: 30px; width: 60%; border: 2px solid #00d4ff;">
+            <p style="font-size: 1.6rem;"><strong>Versión 1.0.0</strong></p>
+            <p style="color: #888; font-size: 1.3rem;">Slides de Sustentación — Junio 2026</p>
+            <p style="margin-top: 60px; font-size: 1.2rem; color: #20c997;">
+                <strong>circle-guard-development</strong> (DEV)<br/><strong>circle-guard-operation</strong> (OPS)
+            </p>
+            <p style="margin-top: 40px; font-size: 0.95rem; color: #888;">Usa ← → para navegar | Cada slide = una idea</p>
+        </div>
+
+        <!-- ==================== SECCIÓN 1: METODOLOGÍA ÁGIL ==================== -->
+
+        <!-- 1.0 Intro Metodología -->
+        <div class="slide" data-slide="1">
+            <h2>1. Metodología Ágil + Branching</h2>
+            <div class="status done">✅ COMPLETO</div>
+            <ul>
+                <li>✅ GitFlow (DEV) vs Trunk-based (OPS) — agile-methodology.md §3.4</li>
+                <li>✅ Sprints en Jira: 33 HU (Sprint 1: 21, Sprint 2: 12)</li>
+                <li>✅ Conventional Commits (feat:, fix:, BREAKING CHANGE:) — git log --grep="US-"</li>
+            </ul>
+        </div>
+
+        <!-- 1.1 Branching -->
+        <div class="slide" data-slide="2">
+            <h3>GitFlow (DEV) vs Trunk-based (OPS)</h3>
+            <img src="../diagrams/08-branching-strategy.png" alt="Branching Strategy" class="slide-image-only">
+        </div>
+
+        <!-- 1.2 Sprints Jira -->
+        <div class="slide" data-slide="3">
+            <h3>Sprints en Jira</h3>
+            <table>
+                <tr>
+                    <th>Sprint</th>
+                    <th>HU</th>
+                    <th>DONE</th>
+                    <th>TODO</th>
+                </tr>
+                <tr>
+                    <td><strong>Sprint 1</strong></td>
+                    <td>21</td>
+                    <td>19</td>
+                    <td>2</td>
+                </tr>
+                <tr>
+                    <td><strong>Sprint 2</strong></td>
+                    <td>12</td>
+                    <td>3</td>
+                    <td>9</td>
+                </tr>
+                <tr style="background: rgba(0, 212, 255, 0.2);">
+                    <td><strong>TOTAL</strong></td>
+                    <td><strong>33</strong></td>
+                    <td><strong>22 (66%)</strong></td>
+                    <td><strong>11 (34%)</strong></td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- 1.2.5 Sprint Jira — Imágenes -->
+        <div class="slide" data-slide="3-img">
+            <h3>Sprints en Jira — Historial</h3>
+            <img src="../diagrams/sprint1.png" alt="Sprint 1" class="slide-image-only">
+        </div>
+
+        <!-- 1.2.6 Sprint 2 — Imagen -->
+        <div class="slide" data-slide="3-img2">
+            <h3>Sprint 2 — Historial</h3>
+            <img src="../diagrams/sprint2.png" alt="Sprint 2" class="slide-image-only">
+        </div>
+
+        <!-- ==================== SECCIÓN 2: TERRAFORM ==================== -->
+
+        <!-- 2.0 Intro Terraform -->
+        <div class="slide" data-slide="4">
+            <h2>2. IaC Terraform + Arquitectura</h2>
+            <div class="status done">✅ COMPLETO</div>
+            <ul style="font-size: 1.15rem;">
+                <li>✅ Módulos reutilizables: aks, acr, k8s-addons</li>
+                <li>✅ Backend remoto en Azure Blob Storage</li>
+                <li>✅ Infraestructura en Azure (AKS)</li>
+            </ul>
+        </div>
+
+        <!-- 2.0.5 Arquitectura General -->
+        <div class="slide" data-slide="4-arch">
+            <h3>Arquitectura General</h3>
+            <img src="../diagrams/01-architecture-overview.png" alt="Architecture Overview" class="slide-image-only">
+        </div>
+
+        <!-- 2.1 Módulos Terraform -->
+        <div class="slide" data-slide="5">
+            <h3>Módulos Terraform — Reutilizables y Separados</h3>
+            <ul style="font-size: 1.2rem; line-height: 1.8;">
+                <li><strong>aks/</strong> — Azure Kubernetes Service (cluster K8s + node pools + logging)</li>
+                <li><strong>acr/</strong> — Azure Container Registry (almacenamiento de imágenes)</li>
+                <li><strong>k8s-addons/</strong> — Helm charts (cert-manager, Prometheus, Grafana, sealed-secrets, KEDA)</li>
+            </ul>
+            <p style="font-size: 1.1rem; margin-top: 25px; color: #20c997;"><strong>Backend remoto:</strong> Azure Blob Storage (cgtfstate) — estado compartido entre dev/staging/prod</p>
+        </div>
+
+        <!-- 2.1.5 Estructura Módulos -->
+        <div class="slide" data-slide="5-struct">
+            <h3>Estructura de Módulos — Archivos Clave</h3>
+            <div class="code-block" style="font-size: 1rem;">
+                <pre><code class="language-text">infra/modules/
+├── aks/
+│   ├── main.tf          (azurerm_kubernetes_cluster)
+│   ├── variables.tf     (cluster_name, node_count, vm_size)
+│   └── outputs.tf       (kube_config, cluster_id)
+├── acr/
+│   ├── main.tf          (azurerm_container_registry)
+│   └── variables.tf     (registry_name, sku)
+└── k8s-addons/
+    ├── main.tf          (helm_release para cert-manager, Prometheus, etc)
+    └── variables.tf     (enable_monitoring, enable_istio)</code></pre>
+            </div>
+        </div>
+
+        <!-- 2.2 Módulo AKS -->
+        <div class="slide" data-slide="6">
+            <h3>Módulo AKS (Kubernetes)</h3>
+            <div class="code-block">
+                <div class="code-path">circle-guard-operation/infra/modules/aks/main.tf</div>
+                <pre><code class="language-hcl">resource "azurerm_kubernetes_cluster" "staging" {
+  name                = var.cluster_name
+  location            = var.location
+  resource_group_name = var.resource_group
+  kubernetes_version  = "1.34.8"
+
+  default_node_pool {
+    name       = "default"
+    node_count = var.node_count
+    vm_size    = var.vm_size
+    auto_scaling_enabled = true
+  }
+}</code></pre>
+            </div>
+        </div>
+
+        <!-- 2.3 Configuración Dev -->
+        <div class="slide" data-slide="7">
+            <h3>Configuración por Ambiente (dev)</h3>
+            <div class="code-block">
+                <div class="code-path">circle-guard-operation/infra/envs/dev/main.tf</div>
+                <pre><code class="language-hcl">module "aks" {
+  source          = "../../modules/aks"
+  resource_group  = "circleguard-dev-rg"
+  location        = var.location
+  node_count      = 1
+  cluster_name    = "circleguard-dev"
+  environment_tag = "dev"
+}
+
+module "k8s_addons" {
+  source                = "../../modules/k8s-addons"
+  enable_cert_manager   = true
+  enable_sealed_secrets = true
+  enable_keda           = true
+}</code></pre>
+            </div>
+        </div>
+
+        <!-- 2.4 Infraestructura Azure -->
+        <div class="slide" data-slide="8">
+            <h3>Infraestructura en Azure (AKS)</h3>
+            <table style="font-size: 1rem; margin-top: 20px;">
+                <tr>
+                    <th>Ambiente</th>
+                    <th>Cluster</th>
+                    <th>Namespace</th>
+                </tr>
+                <tr>
+                    <td>DEV</td>
+                    <td>circleguard-dev</td>
+                    <td>circleguard-dev</td>
+                </tr>
+                <tr>
+                    <td>STAGING</td>
+                    <td>circleguard-stage</td>
+                    <td>circleguard-stage</td>
+                </tr>
+                <tr>
+                    <td>PROD</td>
+                    <td>circleguard-prod</td>
+                    <td>circleguard-prod</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- 2.4.5 Azure Cloud -->
+        <div class="slide" data-slide="8-cloud">
+            <h3>Azure Cloud Provider</h3>
+            <img src="../diagrams/azure.png" alt="Azure Infrastructure" class="slide-image-only">
+        </div>
+
+        <!-- ==================== SECCIÓN 3: PATRONES ==================== -->
+
+        <!-- 3.0 Intro Patrones -->
+        <div class="slide" data-slide="9">
+            <h2>3. Patrones de Diseño</h2>
+            <div class="status done">✅ COMPLETO</div>
+            <ul style="font-size: 1.15rem;">
+                <li>✅ Repository, Factory, Observer, Decorator</li>
+                <li>✅ Circuit Breaker (Istio)</li>
+                <li>✅ External Config (ConfigMaps)</li>
+                <li>✅ Saga Choreography (Kafka eventos)</li>
+            </ul>
+        </div>
+
+        <!-- 3.0.5 Saga Choreography -->
+        <div class="slide" data-slide="9-saga">
+            <h3>Saga Choreography Pattern</h3>
+            <img src="../diagrams/06-saga-choreography.png" alt="Saga Choreography Pattern" class="slide-image-only">
+        </div>
+
+        <!-- 3.1 Circuit Breaker -->
+        <div class="slide" data-slide="10">
+            <h3>Circuit Breaker (Istio)</h3>
+            <div class="code-block">
+                <div class="code-path">circle-guard-operation/istio/destination-rules.yml</div>
+                <pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: identity-service-cb
+  namespace: circleguard-prod
+spec:
+  host: identity-service
+  trafficPolicy:
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50</code></pre>
+            </div>
+        </div>
+
+        <!-- 3.2 External Config -->
+        <div class="slide" data-slide="11">
+            <h3>External Configuration (ConfigMap)</h3>
+            <div class="code-block">
+                <div class="code-path">circle-guard-operation/k8s/configmaps/configmap-infra.yml</div>
+                <pre><code class="language-yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: circleguard-infra-config
+  namespace: circleguard-prod
+data:
+  POSTGRES_HOST: "circleguard-postgres.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  KAFKA_BOOTSTRAP_SERVERS: "circleguard-kafka.svc.cluster.local:9092"
+  REDIS_HOST: "circleguard-redis.svc.cluster.local"
+  NEO4J_URI: "bolt://circleguard-neo4j.svc.cluster.local:7687"
+  LDAP_URL: "ldap://circleguard-openldap.svc.cluster.local:389"</code></pre>
+            </div>
+        </div>
+
+        <!-- ==================== SECCIÓN 4: CI/CD ==================== -->
+
+        <!-- 4.0 Intro CI/CD -->
+        <div class="slide" data-slide="12">
+            <h2>4. CI/CD — Pipelines Automatizados</h2>
+            <div class="status done">✅ COMPLETO</div>
+            <ul style="font-size: 1.15rem;">
+                <li>✅ SonarQube, Trivy, OWASP ZAP</li>
+                <li>✅ GitHub Actions + Jenkins — dev → staging → prod</li>
+                <li>✅ Aprobación manual para producción</li>
+            </ul>
+        </div>
+
+        <!-- 4.0.5 CI/CD Pipeline -->
+        <div class="slide" data-slide="12-pipeline">
+            <h3>CI/CD Pipeline Flow</h3>
+            <img src="../diagrams/03-cicd-pipeline.png" alt="CI/CD Pipeline" class="slide-image-only">
+        </div>
+
+        <!-- 4.1 GitHub Actions Develop -->
+        <div class="slide" data-slide="13">
+            <h3>GitHub Actions: CI Develop (Rama develop)</h3>
+            <ul style="font-size: 1.2rem; line-height: 1.8;">
+                <li><strong>Trigger:</strong> Push a rama develop</li>
+                <li><strong>Build:</strong> ./gradlew bootJar --parallel</li>
+                <li><strong>Unit Tests:</strong> ./gradlew unitTest (mínimo 70% cobertura)</li>
+                <li><strong>Security Scanning:</strong> Trivy (escaneo vulnerabilidades Docker)</li>
+                <li><strong>Code Quality:</strong> SonarQube (análisis estático)</li>
+                <li><strong>Registry:</strong> Push imagen `:dev-{SHA}` a ACR</li>
+            </ul>
+        </div>
+
+        <!-- 4.1.5 SonarQube -->
+        <div class="slide" data-slide="13-sq">
+            <h3>SonarQube Quality Analysis</h3>
+            <p style="font-size: 1.2rem; margin-bottom: 20px;">Detecta:</p>
+            <ul style="font-size: 1.15rem;">
+                <li>Code smells (duplicaciones, complejidad ciclomática)</li>
+                <li>Vulnerabilidades de seguridad (OWASP Top 10)</li>
+                <li>Bug hotspots</li>
+                <li>Coverage de tests</li>
+            </ul>
+            <p style="font-size: 1.1rem; margin-top: 20px; color: #20c997;"><strong>Quality Gate:</strong> Bloquea merge si coverage &lt; 70% o hay issues críticas</p>
+        </div>
+
+        <!-- 4.2 GitHub Actions Main (OWASP ZAP) -->
+        <div class="slide" data-slide="14">
+            <h3>GitHub Actions: CI Main (OWASP ZAP)</h3>
+            <div class="code-block">
+                <div class="code-path">circle-guard-development/.github/workflows/ci-main.yml</div>
+                <pre><code class="language-yaml">  security-dast:
+    name: OWASP ZAP Dynamic Testing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker run -t owasp/zap2docker-stable \
+          zap-baseline.py -t http://gateway:8087 \
+          -r zap-report.html || true
+      - name: Upload ZAP Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report
+          path: zap-report.html</code></pre>
+            </div>
+        </div>
+
+        <!-- 4.3 Jenkins Staging -->
+        <div class="slide" data-slide="15">
+            <h3>Jenkins CD: Deploy a Staging (AKS)</h3>
+            <ul style="font-size: 1.15rem; line-height: 1.8;">
+                <li><strong>Trigger:</strong> GitHub Actions entrega IMAGE_TAG (ej: staging-a3f9c12)</li>
+                <li><strong>Auth Azure:</strong> az login con service principal</li>
+                <li><strong>Kubectl Config:</strong> az aks get-credentials para circleguard-stage</li>
+                <li><strong>Deploy:</strong> kubectl apply -f k8s/services/stage/ (todos los 8 servicios)</li>
+                <li><strong>Database:</strong> Reset Postgres + Flyway migrations</li>
+                <li><strong>Health Checks:</strong> 24 reintentos × 15s (360s timeout) al endpoint /actuator/health</li>
+                <li><strong>Slack Notify:</strong> Notificación de éxito o fallo</li>
+            </ul>
+        </div>
+
+        <!-- 4.3.5 Jenkins -->
+        <div class="slide" data-slide="15-jenkins">
+            <h3>Jenkins Automation Platform</h3>
+            <img src="../diagrams/jenkins.png" alt="Jenkins Logo" class="slide-image-only">
+        </div>
+
+        <!-- 4.4 Jenkins Prod (Aprobación) -->
+        <div class="slide" data-slide="16">
+            <h3>Jenkins CD: Aprobación Manual (Prod)</h3>
+            <div class="code-block">
+                <div class="code-path">circle-guard-operation/Jenkinsfile-prod</div>
+                <pre><code class="language-groovy">pipeline {
+  agent any
+  stages {
+    stage('Manual Approval for Production') {
+      steps {
+        input 'Aprobar despliegue a PRODUCCIÓN?'
+      }
+    }
+    stage('Deploy to GKE Prod') {
+      steps {
+        sh 'gcloud auth activate-service-account --key-file=$GCP_KEY'
+        sh 'gcloud container clusters get-credentials circleguard-prod'
+        sh 'kubectl apply -f k8s/services/prod -n circleguard-prod'
+      }
+    }
+  }
+}</code></pre>
+            </div>
+        </div>
+
+        <!-- ==================== SECCIÓN 5: PRUEBAS ==================== -->
+
+        <!-- 5.0 Intro Pruebas -->
+        <div class="slide" data-slide="17">
+            <h2>5. Pruebas — Suite Completa</h2>
+            <div class="status done">✅ COMPLETO</div>
+            <ul>
+                <li>✅ Unitarias (JUnit): ≥70% — services/*/src/test/</li>
+                <li>✅ Integración (Testcontainers) — services/*/src/integrationTest/</li>
+                <li>✅ E2E (REST Assured) — tests/e2e/</li>
+                <li>✅ Performance (Locust) — tests/performance/locustfile.py</li>
+                <li>✅ Seguridad (OWASP ZAP) — .github/workflows/ci-main.yml</li>
+            </ul>
+        </div>
+
+        <!-- 5.1 Unit Test -->
+        <div class="slide" data-slide="18">
+            <h3>Unit Test: JWT Token Service</h3>
+            <div class="code-block">
+                <div class="code-path">circle-guard-development/services/circleguard-auth-service/src/test/java/.../JwtTokenServiceTest.java</div>
+                <pre><code class="language-java">@Test
+void testGenerateToken_ReturnsValidJwt() {
+    String token = jwtService.generateToken("user123");
+    assertNotNull(token);
+    assertTrue(jwtService.validateToken(token));
+    assertEquals("user123",
+        jwtService.getUserFromToken(token));
+}
+
+@Test
+void testTokenExpiration() {
+    String expired = jwtService.generateExpiredToken();
+    assertFalse(jwtService.validateToken(expired));
+}</code></pre>
+            </div>
+        </div>
+
+        <!-- 5.2 Integration Test -->
+        <div class="slide" data-slide="19">
+            <h3>Integration Test: Auth Service</h3>
+            <div class="code-block">
+                <div class="code-path">circle-guard-development/services/circleguard-auth-service/src/integrationTest/kotlin/.../AuthIntegrationTest.kt</div>
+                <pre><code class="language-kotlin">@Test
+fun `mock identity client returns random UUID`() {
+    val mockId = UUID.randomUUID()
+    assertNotNull(mockId)
+    assertEquals(UUID::class.java, mockId::class.java)
+}
+
+@Test
+fun `UUID generation produces valid UUIDs`() {
+    repeat(10) {
+        val uuid = UUID.randomUUID()
+        assertEquals(36, uuid.toString().length)
+    }
+}</code></pre>
+            </div>
+        </div>
+
+        <!-- 5.3 Performance Test -->
+        <div class="slide" data-slide="20">
+            <h3>Performance Test: Locust</h3>
+            <div class="code-block">
+                <div class="code-path">circle-guard-development/tests/performance/locustfile.py</div>
+                <pre><code class="language-python">AUTH_URL = os.environ.get("AUTH_URL", "http://localhost:8180")
+GATEWAY_URL = os.environ.get("GATEWAY_URL", "http://localhost:8087")
+MAX_RETRIES = 3
+
+class BaseUser(HttpUser):
+    def _do_login(self, username, password):
+        resp = self.client.post(
+            f"{AUTH_URL}/api/v1/auth/login",
+            json={"username": username, "password": password}
+        )
+        return resp.json()["token"] if resp.status_code == 200 else None</code></pre>
+            </div>
+        </div>
+
+        <!-- ==================== SECCIÓN 6: CHANGE MANAGEMENT ==================== -->
+
+        <!-- 6.0 Intro Change Management -->
+        <div class="slide" data-slide="21">
+            <h2>6. Change Management + Release Notes</h2>
+            <div class="status done">✅ COMPLETO</div>
+            <ul>
+                <li>✅ Versionado Semántico — agile-methodology.md §4</li>
+                <li>✅ Conventional Commits — git log --oneline</li>
+                <li>✅ Plan de rollback (5 pasos) — release-notes-v1.0.0.md</li>
+                <li>✅ Release Notes v1.0.0 — docs/release-notes-v1.0.0.md</li>
+            </ul>
+        </div>
+
+        <!-- 6.1 SemVer & Conventional Commits -->
+        <div class="slide" data-slide="22">
+            <h3>Versionado Semántico (SemVer)</h3>
+            <div class="code-block">
+                <div class="code-path">circle-guard-operation/docs/agile-methodology.md (§4)</div>
+                <pre><code class="language-markdown">REGLA: Conventional Commits → SemVer automático
+
+feat:  → versión MENOR (v1.0.0 → v1.1.0)
+fix:   → versión PARCHE (v1.0.0 → v1.0.1)
+BREAKING CHANGE: → versión MAYOR (v1.0.0 → v2.0.0)
+
+EJEMPLOS:
+  feat(auth): add LDAP password reset (US-01)
+  fix(kubernetes): add RBAC roles (US-11)
+  chore(ci): upgrade SonarQube version</code></pre>
+            </div>
+        </div>
+
+        <!-- 6.2 Rollback Plan -->
+        <div class="slide" data-slide="23">
+            <h3>Plan de Rollback (5 pasos)</h3>
+            <ul style="font-size: 1.25rem;">
+                <li><strong>1. Detener:</strong> requerir aprobación manual en Jenkins</li>
+                <li><strong>2. Revertir imagen:</strong> scripts/update-image-tag.sh &lt;service&gt; &lt;old-tag&gt;</li>
+                <li><strong>3. Revertir manifests:</strong> kubectl rollout undo deployment/&lt;svc&gt;</li>
+                <li><strong>4. Revertir infra:</strong> git revert + terraform apply (si aplica)</li>
+                <li><strong>5. Verificar:</strong> health checks + métricas Grafana</li>
+            </ul>
+        </div>
+
+        <!-- 6.3 Release Notes -->
+        <div class="slide" data-slide="24">
+            <h3>Release Notes v1.0.0</h3>
+            <div class="code-block">
+                <div class="code-path">circle-guard-operation/docs/release-notes-v1.0.0.md</div>
+                <pre><code class="language-yaml">Versión: 1.0.0 (primera versión estable)
+Fecha: 2026-06-12
+Repositorios:
+  - circle-guard-development: 8 microservicios
+  - circle-guard-operation: infraestructura + CI/CD
+Tag: v1.0.0 (aplicado simultáneamente en ambos repos)
+Estado: Listo para v1.0.0 (requiere git tag v1.0.0 en main)</code></pre>
+            </div>
+        </div>
+
+        <!-- ==================== SECCIÓN 7: OBSERVABILIDAD ==================== -->
+
+        <!-- 7.0 Intro Observabilidad -->
+        <div class="slide" data-slide="25">
+            <h2>7. Observabilidad — Monitoreo Completo</h2>
+            <div class="status partial">🟡 PARCIAL</div>
+            <ul style="font-size: 1.15rem; line-height: 1.9;">
+                <li><strong>Prometheus:</strong> Scraping de métricas (JVM, HTTP, Kafka lag)</li>
+                <li><strong>Grafana:</strong> 15+ dashboards (por servicio, latencias, disponibilidad)</li>
+                <li><strong>ELK Stack:</strong> Filebeat → Logstash → Elasticsearch → Kibana</li>
+                <li><strong>Alertas:</strong> PodCrashLooping, HighP99Latency, OutOfMemory (via Alertmanager)</li>
+                <li><strong>Health Checks:</strong> Liveness probes (detectan loops infinitos) + Readiness probes (tráfico enrutado)</li>
+                <li><strong>⚠️ Jaeger/OTel:</strong> Infraestructura lista, SDKs pendientes (v1.1.0)</li>
+            </ul>
+        </div>
+
+        <!-- 7.0.5 Observability Stack -->
+        <div class="slide" data-slide="25-obs">
+            <h3>Observability Stack</h3>
+            <img src="../diagrams/05-observability-stack.png" alt="Observability Stack" class="slide-image-only">
+        </div>
+
+        <!-- 7.1 Prometheus Rules -->
+        <div class="slide" data-slide="26">
+            <h3>Prometheus: Alertas</h3>
+            <div class="code-block">
+                <div class="code-path">circle-guard-operation/k8s/monitoring/prometheus-rules.yml</div>
+                <pre><code class="language-yaml">apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: circleguard-alerts
+spec:
+  groups:
+    - name: circleguard.availability
+      rules:
+        - alert: PodCrashLooping
+          expr: rate(kube_pod_container_status_restarts_total[5m]) > 2
+          for: 2m
+          annotations:
+            summary: "Pod {{ $labels.pod }} CrashLoopBackOff"</code></pre>
+            </div>
+        </div>
+
+        <!-- 7.2 Grafana Dashboards -->
+        <div class="slide" data-slide="27">
+            <h3>Grafana: Dashboards ConfigMap</h3>
+            <div class="code-block">
+                <div class="code-path">circle-guard-operation/k8s/monitoring/grafana-dashboards-configmap.yml</div>
+                <pre><code class="language-yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards-circleguard
+  namespace: monitoring
+data:
+  jvm-overview.json: |
+    {
+      "panels": [
+        {
+          "datasource": "Prometheus",
+          "targets": [
+            { "expr": "jvm_memory_used_bytes" },
+            { "expr": "jvm_threads_current" },
+            { "expr": "http_server_requests_seconds_bucket" }
+          ]
+        }
+      ]
+    }</code></pre>
+            </div>
+        </div>
+
+        <!-- 7.3 Health Checks -->
+        <div class="slide" data-slide="28">
+            <h3>Health Checks: Liveness + Readiness Probes</h3>
+            <div class="code-block">
+                <div class="code-path">circle-guard-operation/k8s/services/prod/deployments</div>
+                <pre><code class="language-yaml">livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: 8087
+  initialDelaySeconds: 90
+  periodSeconds: 15
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: 8087
+  periodSeconds: 10
+  timeoutSeconds: 5</code></pre>
+            </div>
+        </div>
+
+        <!-- 7.4 Tracing Pendiente -->
+        <div class="slide" data-slide="29">
+            <h3>⚠️ Tracing Distribuido (Pendiente)</h3>
+            <ul style="font-size: 1.3rem;">
+                <li><strong>Estado:</strong> Infraestructura de Jaeger lista en stack de observabilidad</li>
+                <li><strong>Falta:</strong> io.micrometer:micrometer-tracing-bridge-otel en build.gradle.kts</li>
+                <li><strong>Falta:</strong> io.opentelemetry.exporter:opentelemetry-exporter-jaeger-thrift</li>
+                <li><strong>Planificado para:</strong> v1.1.0 (US-22)</li>
+            </ul>
+        </div>
+
+        <!-- ==================== SECCIÓN 8: SEGURIDAD ==================== -->
+
+        <!-- 8.0 Intro Seguridad -->
+        <div class="slide" data-slide="30">
+            <h2>8. Seguridad — Defense in Depth</h2>
+            <div class="status done">✅ COMPLETO</div>
+            <ul>
+                <li>✅ Sealed Secrets — k8s/secrets/sealed-secret-*.yml</li>
+                <li>✅ RBAC — k8s/namespaces/circleguard-*.yml (Role, RoleBinding)</li>
+                <li>✅ TLS/cert-manager — k8s/cert-manager/clusterissuer.yml</li>
+                <li>✅ NetworkPolicy — k8s/namespaces/circleguard-*.yml</li>
+            </ul>
+        </div>
+
+        <!-- 8.1 Sealed Secrets -->
+        <div class="slide" data-slide="31">
+            <h3>Sealed Secrets (Cifrado en Reposo)</h3>
+            <div class="code-block">
+                <div class="code-path">circle-guard-operation/k8s/secrets/sealed-secret-dev.yml</div>
+                <pre><code class="language-yaml"># SEALED SECRET — Dev Environment
+# Seguro versionar en git. kubeseal lo descifra en runtime.
+#
+# Regenerar con:
+#   kubectl create secret generic circleguard-secret \
+#     --from-literal=POSTGRES_PASSWORD=... \
+#     --from-literal=JWT_SECRET=... | \
+#   kubeseal --controller-name=sealed-secrets -o yaml</code></pre>
+            </div>
+        </div>
+
+        <!-- 8.2 RBAC -->
+        <div class="slide" data-slide="32">
+            <h3>RBAC: Role + RoleBinding</h3>
+            <div class="code-block">
+                <div class="code-path">circle-guard-operation/k8s/namespaces/circleguard-dev.yml</div>
+                <pre><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: developer-role
+  namespace: circleguard-dev
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch"]</code></pre>
+            </div>
+        </div>
+
+        <!-- 8.3 TLS & Cert-Manager -->
+        <div class="slide" data-slide="33">
+            <h3>TLS: cert-manager + Let's Encrypt</h3>
+            <div class="code-block">
+                <div class="code-path">circle-guard-operation/k8s/cert-manager/clusterissuer.yml</div>
+                <pre><code class="language-yaml">apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: devops@circleguard.edu
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      - http01:
+          ingress:
+            ingressClassName: nginx</code></pre>
+            </div>
+        </div>
+
+        <!-- 8.4 NetworkPolicy -->
+        <div class="slide" data-slide="34">
+            <h3>NetworkPolicy: Segmentación de Tráfico</h3>
+            <div class="code-block">
+                <div class="code-path">circle-guard-operation/k8s/namespaces/circleguard-dev.yml</div>
+                <pre><code class="language-yaml">apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-internal-traffic
+spec:
+  podSelector: {}
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              environment: development
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              environment: development</code></pre>
+            </div>
+        </div>
+
+        <!-- ==================== SECCIÓN 9: DOCUMENTACIÓN ==================== -->
+
+        <!-- 9.0 Intro Documentación -->
+        <div class="slide" data-slide="35">
+            <h2>9. Documentación + Presentación</h2>
+            <div class="status partial">🟡 PARCIAL</div>
+            <h3>Documentación Técnica ✅:</h3>
+            <ul style="font-size: 1.2rem;">
+                <li>✅ architecture.md, design-patterns.md, operations-manual.md</li>
+                <li>✅ change-management.md, cost-analysis.md, agile-methodology.md</li>
+                <li>✅ release-notes-v1.0.0.md, chaos-results.md</li>
+            </ul>
+            <h3 style="margin-top: 20px;">Presentación:</h3>
+            <ul style="font-size: 1.2rem;">
+                <li>✅ slides.html (este documento)</li>
+                <li>⚠️ Video demo (US-31), Slides PDF (US-32)</li>
+            </ul>
+        </div>
+
+        <!-- ==================== BONUS 1: ISTIO ==================== -->
+
+        <!-- B1.0 Intro Istio -->
+        <div class="slide" data-slide="36">
+            <h2>BONUS 1: Service Mesh — Istio</h2>
+            <div class="status done">✅ COMPLETO</div>
+            <ul style="font-size: 1.15rem;">
+                <li>✅ mTLS: STRICT en prod, PERMISSIVE en staging</li>
+                <li>✅ Circuit Breaker: outlier detection + ejection</li>
+                <li>✅ Canary: 80/20 traffic split en promotion-service</li>
+            </ul>
+        </div>
+
+        <!-- B1.0.5 Istio Network -->
+        <div class="slide" data-slide="36-istio">
+            <h3>Kubernetes Istio Network</h3>
+            <img src="../diagrams/04-kubernetes-istio-network.png" alt="Kubernetes Istio Network" class="slide-image-only">
+        </div>
+
+        <!-- B1.1 PeerAuthentication -->
+        <div class="slide" data-slide="37">
+            <h3>mTLS: PeerAuthentication STRICT (prod)</h3>
+            <div class="code-block">
+                <div class="code-path">circle-guard-operation/istio/peer-authentication.yml</div>
+                <pre><code class="language-yaml">apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: circleguard-prod
+spec:
+  mtls:
+    mode: STRICT</code></pre>
+            </div>
+        </div>
+
+        <!-- B1.2 DestinationRules (CB) -->
+        <div class="slide" data-slide="38">
+            <h3>Circuit Breaker: DestinationRules</h3>
+            <div class="code-block">
+                <div class="code-path">circle-guard-operation/istio/destination-rules.yml</div>
+                <pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: identity-service-cb
+  namespace: circleguard-prod
+spec:
+  host: identity-service
+  trafficPolicy:
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50</code></pre>
+            </div>
+        </div>
+
+        <!-- B1.3 VirtualServices (Canary) -->
+        <div class="slide" data-slide="39">
+            <h3>Canary Deployment: VirtualServices (80/20)</h3>
+            <div class="code-block">
+                <div class="code-path">circle-guard-operation/istio/virtual-services.yml</div>
+                <pre><code class="language-yaml">apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: promotion-service
+spec:
+  http:
+    - route:
+        - destination:
+            host: promotion-service
+            subset: v1
+          weight: 80
+        - destination:
+            host: promotion-service
+            subset: v2
+          weight: 20
+      retries:
+        attempts: 3</code></pre>
+            </div>
+        </div>
+
+        <!-- ==================== BONUS 2: CHAOS ==================== -->
+
+        <!-- B2.0 Intro Chaos -->
+        <div class="slide" data-slide="40">
+            <h2>BONUS 2: Chaos Engineering</h2>
+            <div class="status done">✅ COMPLETO</div>
+            <h3>Experimentos Implementados:</h3>
+            <ul>
+                <li>PodChaos: mata pods aleatorios cada 2 minutos</li>
+                <li>NetworkChaos: inyecta 500ms latencia (auth → identity)</li>
+                <li>StressChaos: estrés CPU/memoria en Neo4j</li>
+            </ul>
+        </div>
+
+        <!-- B2.1 PodChaos -->
+        <div class="slide" data-slide="41">
+            <h3>PodChaos: Kill Aleatorio</h3>
+            <div class="code-block">
+                <div class="code-path">circle-guard-operation/chaos/pod-chaos.yml</div>
+                <pre><code class="language-yaml"># PodChaos: kill aleatorio cada 2 minutos
+# Valida: auto-healing, readiness probes, HPA
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: promotion-pod-kill
+  namespace: chaos-testing
+spec:
+  action: pod-kill
+  mode: one
+  selector:
+    namespaces: ["circleguard-stage"]
+    labelSelectors:
+      app: promotion-service
+  scheduler:
+    cron: "@every 2m"</code></pre>
+            </div>
+        </div>
+
+        <!-- ==================== BONUS 3: FINOPS ==================== -->
+
+        <!-- B3.0 Intro FinOps -->
+        <div class="slide" data-slide="42">
+            <h2>BONUS 3: FinOps — Escalado Inteligente</h2>
+            <div class="status done">✅ COMPLETO</div>
+            <h3>Implementación:</h3>
+            <ul>
+                <li>KEDA: scale-to-zero basado en Kafka topic lag</li>
+                <li>Kubecost: análisis costos por proveedor</li>
+                <li>Cost Analysis: optimizaciones documentadas</li>
+            </ul>
+        </div>
+
+        <!-- B3.1 KEDA -->
+        <div class="slide" data-slide="43">
+            <h3>KEDA: Scale-to-Zero (Kafka Trigger)</h3>
+            <div class="code-block">
+                <div class="code-path">circle-guard-operation/k8s/services/dev/keda-scaled-objects.yml</div>
+                <pre><code class="language-yaml">apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: promotion-service-scaler
+  namespace: circleguard-dev
+spec:
+  minReplicaCount: 0
+  maxReplicaCount: 3
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: circleguard-kafka.svc.cluster.local:9092
+        topic: health-status-events
+        lagThreshold: "5"</code></pre>
+            </div>
+        </div>
+
+        <!-- ==================== RESUMEN FINAL ==================== -->
+
+        <!-- Final Resume -->
+        <div class="slide" data-slide="44">
+            <h2>Resumen: Requisitos Completados</h2>
+            <table>
+                <tr>
+                    <th>Sección</th>
+                    <th>%</th>
+                    <th>Estado</th>
+                </tr>
+                <tr>
+                    <td>1. Metodología Ágil</td>
+                    <td>10%</td>
+                    <td style="color: #28a745;">✅</td>
+                </tr>
+                <tr>
+                    <td>2. IaC Terraform</td>
+                    <td>20%</td>
+                    <td style="color: #28a745;">✅</td>
+                </tr>
+                <tr>
+                    <td>3. Patrones de Diseño</td>
+                    <td>10%</td>
+                    <td style="color: #28a745;">✅</td>
+                </tr>
+                <tr>
+                    <td>4. CI/CD</td>
+                    <td>15%</td>
+                    <td style="color: #28a745;">✅</td>
+                </tr>
+                <tr>
+                    <td>5. Pruebas</td>
+                    <td>15%</td>
+                    <td style="color: #28a745;">✅</td>
+                </tr>
+                <tr>
+                    <td>6. Change Mgmt + Release</td>
+                    <td>5%</td>
+                    <td style="color: #28a745;">✅</td>
+                </tr>
+                <tr>
+                    <td>7. Observabilidad</td>
+                    <td>10%</td>
+                    <td style="color: #fd7e14;">🟡</td>
+                </tr>
+                <tr>
+                    <td>8. Seguridad</td>
+                    <td>5%</td>
+                    <td style="color: #28a745;">✅</td>
+                </tr>
+                <tr>
+                    <td>9. Documentación</td>
+                    <td>10%</td>
+                    <td style="color: #fd7e14;">🟡</td>
+                </tr>
+                <tr style="background: rgba(0, 212, 255, 0.2);">
+                    <td><strong>Subtotal</strong></td>
+                    <td><strong>90%</strong></td>
+                    <td></td>
+                </tr>
+                <tr style="background: rgba(32, 201, 151, 0.2);">
+                    <td><strong>BONUS (4)</strong></td>
+                    <td><strong>+20%</strong></td>
+                    <td><strong>✅</strong></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- Navegación -->
+    <div class="nav-buttons">
+        <button id="prevBtn" onclick="goToPrevious()">← Anterior</button>
+        <button id="nextBtn" onclick="goToNext()">Siguiente →</button>
+    </div>
+    <div class="slide-number"><span id="current">1</span> / <span id="total">56</span></div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        function showSlide(n) {
+            slides.forEach(slide => {
+                slide.classList.remove('visible');
+            });
+
+            if (n >= totalSlides) {
+                currentSlide = 0;
+            } else if (n < 0) {
+                currentSlide = totalSlides - 1;
+            } else {
+                currentSlide = n;
+            }
+
+            slides[currentSlide].classList.add('visible');
+            document.getElementById('current').textContent = currentSlide + 1;
+            document.getElementById('total').textContent = totalSlides;
+        }
+
+        function goToNext() {
+            showSlide(currentSlide + 1);
+        }
+
+        function goToPrevious() {
+            showSlide(currentSlide - 1);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                e.preventDefault();
+                goToNext();
+            }
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                goToPrevious();
+            }
+        });
+
+        document.querySelectorAll('pre code').forEach((el) => {
+            hljs.highlightElement(el);
+        });
+
+        showSlide(0);
+    </script>
+</body>
+</html>

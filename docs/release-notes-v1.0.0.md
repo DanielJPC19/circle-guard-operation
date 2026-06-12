@@ -4,7 +4,7 @@
 **Versión:** 1.0.0 (primera versión estable)
 **Repositorios:**
 - `circle-guard-development` (DEV) — código de los 8 microservicios (auth, identity, promotion, notification, form, gateway, dashboard, file)
-- `circle-guard-operation` (OPS) — infraestructura (Terraform multi-cloud), CI/CD (GitHub Actions + Jenkins), Kubernetes manifests, y documentación técnica
+- `circle-guard-operation` (OPS) — infraestructura (Terraform en Azure AKS), CI/CD (GitHub Actions + Jenkins), Kubernetes manifests, y documentación técnica
 
 > **Ubicación sugerida:** `circle-guard-operation/docs/release-notes-v1.0.0.md`
 > (recomendado mirror en `circle-guard-development/docs/` para que ambos repos lo referencien).
@@ -15,8 +15,8 @@
 
 `v1.0.0` es la primera versión estable de **CircleGuard**, una plataforma de
 microservicios para monitoreo de salud en un campus universitario. Esta versión
-entrega la plataforma completa de 8 microservicios desplegable sobre Kubernetes
-multi-cloud, con prácticas de DevOps de extremo a extremo: infraestructura como
+entrega la plataforma completa de 8 microservicios desplegable sobre Azure Kubernetes Service (AKS),
+con prácticas de DevOps de extremo a extremo: infraestructura como
 código, CI/CD con promoción controlada por ambientes, suite de pruebas
 (unitarias, integración, E2E, rendimiento, seguridad), observabilidad,
 seguridad y service mesh.
@@ -44,9 +44,9 @@ La plataforma se compone de 8 microservicios Spring Boot (Java/Kotlin, Gradle):
 
 ### Infraestructura como código (Terraform) ✅
 - **Módulos reutilizables** en `infra/modules/`: AKS (Azure Kubernetes Service), ACR (Azure Container Registry), k8s-addons (Helm charts para cert-manager, Prometheus, Grafana, sealed-secrets, etc.).
-- **Multi-cloud:** DigitalOcean (DOKS — dev), Azure (AKS — staging), Google Cloud (GKE — prod).
+- **Azure AKS:** Todos los ambientes (dev, staging, prod) desplegados en Azure Kubernetes Service.
 - **Ambientes separados** en `infra/envs/dev`, `infra/envs/staging`, `infra/envs/prod`, más `infra/envs/shared` para recursos globales.
-- **Backend remoto configurado por ambiente:** Azure Blob Storage (`cgtfstate` storage account, `tfstate` container, claves separadas por env).
+- **Backend remoto:** Azure Blob Storage (`cgtfstate` storage account, `tfstate` container, claves separadas por env).
 - **Validación:** `terraform validate` pasa en los 3 ambientes (sin errores de sintaxis).
 
 ### CI/CD ✅
@@ -124,7 +124,7 @@ La plataforma se compone de 8 microservicios Spring Boot (Java/Kotlin, Gradle):
   - Documentación de resultados: `docs/chaos-results.md`.
 - **FinOps (5% bonus):**
   - **KEDA (Kubernetes Event Autoscaling):** Scale-to-zero para promotion-service basado en Kafka topic lag. ScaledObject en `k8s/services/*/` con escalado 0→3 según `promotion-events` lag threshold.
-  - **Kubecost + analysis:** Cost por proveedor, nodo, servicio. Datos exportados en `docs/cost-analysis.md` (DOKS ~$48/mes, AKS ~$140/mes, GKE ~$230/mes, total ~$438/mes).
+  - **Kubecost + analysis:** Cost por nodo, servicio en Azure AKS. Datos exportados en `docs/cost-analysis.md` (Azure AKS ~$230/mes estimado para los 3 ambientes).
   - **Dashboards Grafana FinOps:** Métrica de coste actual vs presupuestado.
 
 ---
@@ -160,7 +160,7 @@ Los siguientes documentos están disponibles en `circle-guard-operation/docs/`:
 - **`operations-manual.md`:** Guía paso a paso para deploy en dev/staging/prod, troubleshooting, rollback, escalado.
 - **`change-management.md`:** Convención de commits, checklist de aprobación, versionado semántico, impacto en release.
 - **`cost-analysis.md`:** Desglose de costos por proveedor, estrategia FinOps, proyecciones.
-- **`multi-cloud-comparison.md`:** Análisis de trade-offs entre DOKS, AKS, GKE.
+- **`multi-cloud-comparison.md`:** Evaluación de proveedores considerados (DOKS, AKS, GKE); decisión implementada: Azure AKS.
 - **`chaos-results.md`:** Resultados de experimentos de Chaos Mesh (resiliencia validada).
 - **`agile-methodology.md`:** Metodología Scrum, estrategia de branching, sprint history, épicas (este documento corresponde a US-25).
 - **`release-notes-v1.0.0.md`:** Este documento (US-26 + US-33).

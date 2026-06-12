@@ -263,7 +263,7 @@ US-12. Cada épica está vinculada en Jira con sus criterios de aceptación deta
 | Épica | Descripción | Estado | HU base | Sección(es) |
 |-------|-------------|--------|---------|------------|
 | A. Plataforma de microservicios | 8 servicios Spring Boot (auth, identity, promotion, notification, form, gateway, dashboard, file) integrados en Kubernetes. | ✅ Completo | — | — (base) |
-| B. Infraestructura como Código | Terraform modular multi-cloud (DOKS/AKS/GKE) con backend remoto por ambiente. | ✅ Completo | **US-01** (scaffolding) | 2 (20%) |
+| B. Infraestructura como Código | Terraform modular en Azure AKS con backend remoto en Azure Blob Storage. | ✅ Completo | **US-01** (scaffolding) | 2 (20%) |
 | C. CI/CD | Pipelines GitHub Actions + Jenkins con promoción dev→stage→prod y aprobación manual. | ✅ Completo | **US-02** (scaffolding) + US-03, 04, 05 | 4 (15%) |
 | D. Pruebas | Unitarias, integración (Testcontainers, @EmbeddedKafka), E2E (REST Assured), rendimiento (Locust), seguridad (OWASP ZAP). | ✅ Completo | **US-06** (scaffolding) + US-07, 08, 16, 17, 18 | 5 (15%) |
 | E. Observabilidad | Prometheus, Grafana, ELK, health checks, métricas. Tracing (Jaeger) infraestructura lista. | 🟡 Parcial* | US-10, 13, 14, 15 | 7 (10%) |
@@ -292,8 +292,8 @@ repositorios.
 Todas las HU siguientes están consolidadas en un único commit inicial y marcadas
 como `[DONE]` en el board de Jira:
 
-- **US-01:** Provisionar infraestructura multi-cloud con Terraform (Módulos: aks,
-  acr, k8s-addons; Ambientes: dev, staging, prod con backend remoto)
+- **US-01:** Provisionar infraestructura con Terraform en Azure AKS (Módulos: aks,
+  acr, k8s-addons; Ambientes: dev, staging, prod con backend en Azure Blob Storage)
 - **US-02:** Automatizar CI para rama develop (GitHub Actions: build + unit tests
   + SonarQube + Trivy)
 - **US-06:** Tests unitarios con cobertura mínima 70% (JUnit + Mockito + JaCoCo
@@ -315,7 +315,7 @@ como `[DONE]` en el board de Jira:
 - **US-18:** Integration tests de dashboard-service con Testcontainers
 
 **Incremento entregable:** Plataforma completa base levantable con `docker-compose`,
-infraestructura como código multi-cloud, seguridad K8s (RBAC/Sealed Secrets/TLS),
+infraestructura como código en Azure (AKS), seguridad K8s (RBAC/Sealed Secrets/TLS),
 service mesh Istio, pipeline CI/CD en GitHub Actions y Jenkins funcionales, pruebas
 unitarias e integración pasando, observabilidad inicial.
 
@@ -334,7 +334,7 @@ Historias de usuario completadas (confirmadas en commits):
 - **US-15:** Documentación técnica completa (architecture.md con diagramas,
   operations-manual.md, change-management.md, cost-analysis.md, multi-cloud-comparison.md)
 
-**Incremento entregable:** Plataforma desplegable en multi-cloud (DOKS/AKS/GKE)
+**Incremento entregable:** Plataforma desplegable en Azure (AKS)
 con monitoreo operativo, alertas, gestión de secretos (Sealed Secrets), RBAC,
 TLS/cert-manager, NetworkPolicy, Istio mTLS en producción, y documentación
 técnica de extremo a extremo.
@@ -360,7 +360,7 @@ Historias de usuario pendientes o parcialmente completadas:
 - **US-01, US-02, US-06, US-11, US-12** fueron consolidadas en el commit inicial
   squashed `0d2b24c` (2026-06-05 "feat: initial project structure"). Están marcadas
   como `[DONE]` en el board de Jira y su evidencia incluye:
-  - US-01: Terraform multi-cloud (infra/modules/, infra/envs/ con backends remotos)
+  - US-01: Terraform en Azure AKS (infra/modules/, infra/envs/ con backends en Azure)
   - US-02: CI develop (.github/workflows/ci-develop.yml con SonarQube + Trivy)
   - US-06: Tests unitarios 70% cobertura (build.gradle.kts + services/*/src/test/)
   - US-11: Seguridad K8s (RBAC, NetworkPolicy, Sealed Secrets, cert-manager)

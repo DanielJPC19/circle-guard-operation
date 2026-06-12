@@ -20,7 +20,7 @@ pipeline {
         K8S_DIR          = 'k8s/services/prod'
         INFRA_DIR        = 'k8s/infra'
         SERVICES         = 'auth-service identity-service promotion-service gateway-service notification-service form-service'
-        ROLLOUT_TIMEOUT  = '600'
+        ROLLOUT_TIMEOUT  = '900'
         AZ_TENANT_ID     = credentials('az-tenant-id')
     }
 

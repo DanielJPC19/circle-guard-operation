@@ -8,7 +8,7 @@ pipeline {
     }
 
     parameters {
-        string(name: 'IMAGE_TAG',   defaultValue: 'prod-latest', description: 'Image tag a desplegar (ej: prod-a3f9c12)')
+        string(name: 'IMAGE_TAG',   defaultValue: 'latest', description: 'Image tag a desplegar (ej: prod-a3f9c12)')
         string(name: 'ENVIRONMENT', defaultValue: 'production',  description: 'Ambiente destino')
     }
 

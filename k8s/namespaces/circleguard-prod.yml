@@ -45,12 +45,11 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: kube-system
-      ports:
+    - ports:
         - protocol: TCP
           port: 53
         - protocol: UDP
           port: 53
-    - ports:
         - protocol: TCP
           port: 443
 

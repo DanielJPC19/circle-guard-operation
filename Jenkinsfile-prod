@@ -220,14 +220,15 @@ pipeline {
                     echo "==> Verificando DNS resolution desde pods en $NAMESPACE..."
                     DNS_POD="dns-verify-$BUILD_NUMBER"
                     kubectl run $DNS_POD --image=busybox:latest --restart=Never -n $NAMESPACE \
-                        -- sh -c "nslookup circleguard-postgres.$NAMESPACE.svc.cluster.local && echo DNS_OK || echo DNS_FAIL"
-                    kubectl wait pod/$DNS_POD -n $NAMESPACE \
-                        --for=jsonpath='.status.phase'=Succeeded --timeout=60s 2>/dev/null \
-                        || kubectl wait pod/$DNS_POD -n $NAMESPACE \
-                        --for=jsonpath='.status.phase'=Failed --timeout=60s 2>/dev/null \
-                        || sleep 30
+                        -- sh -c "timeout 15 nslookup circleguard-postgres.$NAMESPACE.svc.cluster.local && echo DNS_OK || echo DNS_FAIL"
+                    for i in $(seq 1 10); do
+                        PHASE=$(kubectl get pod $DNS_POD -n $NAMESPACE -o jsonpath='{.status.phase}' 2>/dev/null || echo "Unknown")
+                        if [ "$PHASE" = "Succeeded" ] || [ "$PHASE" = "Failed" ]; then break; fi
+                        echo "Esperando pod dns-verify... (${i}/10, fase: $PHASE)"
+                        sleep 3
+                    done
                     DNS_LOGS=$(kubectl logs $DNS_POD -n $NAMESPACE 2>/dev/null || echo "DNS_FAIL (no logs)")
-                    kubectl delete pod/$DNS_POD -n $NAMESPACE --ignore-not-found=true 2>/dev/null || true
+                    kubectl delete pod $DNS_POD -n $NAMESPACE --ignore-not-found=true 2>/dev/null || true
                     echo "$DNS_LOGS"
                     echo "$DNS_LOGS" | grep -q "DNS_OK" \
                         || { echo "ERROR: DNS no resuelve circleguard-postgres.$NAMESPACE.svc.cluster.local — revisar CoreDNS en el cluster."; exit 1; }

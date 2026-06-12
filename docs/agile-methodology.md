@@ -162,6 +162,26 @@ con revisión previa, ya que la infraestructura como código se beneficia de un
   `feature/us-*`, `fix/us-*`) y trunk-based en OPS (`main` con fix branches
   integradas) coinciden con la política descrita.
 
+### 3.4 Flujos distintos, mismo tag: por diseño
+
+Aunque `circle-guard-development` (DEV) y `circle-guard-operation` (OPS) emplean
+estrategias de branching fundamentalmente diferentes, **ambos producen el mismo
+tag `v1.0.0`** de forma intencional:
+
+| Aspecto | DEV (Código) | OPS (Infraestructura) | Razón |
+|---------|---|---|---|
+| **Estrategia** | GitFlow con `develop` + `release/*` | Trunk-based directo sobre `main` | DEV beneficia de separación release; OPS requiere main siempre desplegable |
+| **Rama de trabajo** | `feature/us-XX-*`, `fix/us-XX-*` → `develop` → `release/v1.0.0` | `fix/ci-main`, `fix/ci-workflows`, `fix/terraform-fmt` → `main` | Código requiere validación en release; IaC se vuelve inestable con muchas ramas |
+| **Merge a producción** | `release/v1.0.0` → `main` + tag `v1.0.0` | Tag `v1.0.0` directo en `main` | Release branch permite estabilización; IaC es "listo para producción" en cualquier commit a `main` |
+| **Ventaja** | Control granular de ciclos de release; `develop` siempre inestable durante desarrollo | Simplicidad operacional; sigue principio de "IaC es código" sin bifurcaciones | Flujos alineados al tipo de repositorio |
+
+Ambos repos se sincronizan a través del **tag `v1.0.0`**: cuando `circle-guard-development`
+genera la etiqueta en `main`, `circle-guard-operation` coloca el mismo tag sobre `main` en el
+mismo momento (típicamente durante la ceremonia de release), garantizando que la imagen del
+contenedor, los manifests de Kubernetes y la infraestructura están todas versionadas de
+forma consistente. Esta diferencia de estrategia es **intencional y por diseño**,
+no accidental.
+
 ---
 
 ## 4. Versionado semántico

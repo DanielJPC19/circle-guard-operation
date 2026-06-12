@@ -60,6 +60,20 @@ pipeline {
                     echo "==> Creando namespace $NAMESPACE si no existe (idempotente)..."
                     kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
                     kubectl apply -f k8s/namespaces/circleguard-prod.yml
+
+                    echo "==> Eliminando pods en Terminating state (bloqueados de runs anteriores)..."
+                    TERMINATING=$(kubectl get pods -n $NAMESPACE --no-headers 2>/dev/null \
+                        | awk '/Terminating/{print $1}' || true)
+                    if [ -n "$TERMINATING" ]; then
+                        echo "==> Pods Terminating encontrados: $TERMINATING"
+                        echo "$TERMINATING" | xargs kubectl delete pod -n $NAMESPACE \
+                            --force --grace-period=0 2>/dev/null || true
+                        echo "==> Esperando 10s para que el control plane procese las eliminaciones..."
+                        sleep 10
+                    else
+                        echo "==> No hay pods Terminating — OK"
+                    fi
+
                     echo "==> Limpiando pods Pending de runs anteriores fallidos..."
                     kubectl delete pods -n $NAMESPACE --field-selector=status.phase=Pending --ignore-not-found=true 2>/dev/null || true
                     echo "==> Limpiando ReplicaSets viejos con 0 réplicas..."

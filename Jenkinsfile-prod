@@ -75,6 +75,19 @@ pipeline {
 
                     echo "==> Limpiando pods Pending de runs anteriores fallidos..."
                     kubectl delete pods -n $NAMESPACE --field-selector=status.phase=Pending --ignore-not-found=true 2>/dev/null || true
+
+                    echo "==> Limpiando pods en CrashLoopBackOff/Error de runs anteriores..."
+                    CRASHLOOP=$(kubectl get pods -n $NAMESPACE --no-headers 2>/dev/null \
+                        | awk '/CrashLoopBackOff|Error|OOMKilled/{print $1}' || true)
+                    if [ -n "$CRASHLOOP" ]; then
+                        echo "==> Pods en fallo encontrados: $CRASHLOOP"
+                        echo "$CRASHLOOP" | xargs kubectl delete pod -n $NAMESPACE \
+                            --force --grace-period=0 2>/dev/null || true
+                        sleep 5
+                    else
+                        echo "==> No hay pods en fallo — OK"
+                    fi
+
                     echo "==> Limpiando ReplicaSets viejos con 0 réplicas..."
                     OLD_RS=$(kubectl get rs -n $NAMESPACE -o jsonpath='{.items[?(@.spec.replicas==0)].metadata.name}' 2>/dev/null || true)
                     if [ -n "$OLD_RS" ]; then
@@ -190,6 +203,35 @@ pipeline {
                         --from-literal=LDAP_MANAGER_PASSWORD=password \
                         --dry-run=client -o yaml | kubectl apply -f -
                     echo "==> Secret circleguard-secret aplicado"
+                '''
+            }
+        }
+
+        // ── Stage 5.5: Verificar DNS y conectividad con infra ───────────────────
+        stage('Verify Infrastructure DNS') {
+            steps {
+                sh '''
+                    echo "==> Verificando que Service circleguard-postgres existe en $NAMESPACE..."
+                    kubectl get svc circleguard-postgres -n $NAMESPACE \
+                        || { echo "ERROR: Service circleguard-postgres no existe — Stage 3 (infra deploy) falló parcialmente."; exit 1; }
+                    echo "==> Todos los Services de infra:"
+                    kubectl get svc -n $NAMESPACE
+
+                    echo "==> Verificando DNS resolution desde pods en $NAMESPACE..."
+                    DNS_POD="dns-verify-$BUILD_NUMBER"
+                    kubectl run $DNS_POD --image=busybox:latest --restart=Never -n $NAMESPACE \
+                        -- sh -c "nslookup circleguard-postgres.$NAMESPACE.svc.cluster.local && echo DNS_OK || echo DNS_FAIL"
+                    kubectl wait pod/$DNS_POD -n $NAMESPACE \
+                        --for=jsonpath='.status.phase'=Succeeded --timeout=60s 2>/dev/null \
+                        || kubectl wait pod/$DNS_POD -n $NAMESPACE \
+                        --for=jsonpath='.status.phase'=Failed --timeout=60s 2>/dev/null \
+                        || sleep 30
+                    DNS_LOGS=$(kubectl logs $DNS_POD -n $NAMESPACE 2>/dev/null || echo "DNS_FAIL (no logs)")
+                    kubectl delete pod/$DNS_POD -n $NAMESPACE --ignore-not-found=true 2>/dev/null || true
+                    echo "$DNS_LOGS"
+                    echo "$DNS_LOGS" | grep -q "DNS_OK" \
+                        || { echo "ERROR: DNS no resuelve circleguard-postgres.$NAMESPACE.svc.cluster.local — revisar CoreDNS en el cluster."; exit 1; }
+                    echo "==> Infra DNS OK — listo para desplegar servicios de aplicacion"
                 '''
             }
         }

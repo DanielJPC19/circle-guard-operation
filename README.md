@@ -2,6 +2,10 @@
 
 Manifests de Kubernetes, Terraform multi-cloud y pipelines de CD para CircleGuard.
 
+Acceda al informe desde aquí:
+
+https://github.com/DanielJPC19/circle-guard-operation/blob/main/informe-circleguard.md
+
 ## Requisitos
 
 - `kubectl` 1.29+

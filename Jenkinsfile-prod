@@ -8,7 +8,7 @@ pipeline {
     }
 
     parameters {
-        string(name: 'IMAGE_TAG',   defaultValue: 'prod-latest', description: 'Image tag a desplegar (ej: prod-a3f9c12 o SHA corto)')
+        string(name: 'IMAGE_TAG',   defaultValue: 'prod-latest', description: 'Image tag a desplegar (ej: prod-a3f9c12)')
         string(name: 'ENVIRONMENT', defaultValue: 'production',  description: 'Ambiente destino')
     }
 
@@ -21,7 +21,6 @@ pipeline {
         INFRA_DIR        = 'k8s/infra'
         SERVICES         = 'auth-service identity-service promotion-service gateway-service notification-service form-service'
         ROLLOUT_TIMEOUT  = '600'
-        GITHUB_REPO      = 'circleguard-development'
         AZ_TENANT_ID     = credentials('az-tenant-id')
     }
 
@@ -54,7 +53,7 @@ pipeline {
             }
         }
 
-        // ── Stage 2: Crear/verificar namespace (idempotente) ────────────────────
+        // ── Stage 2: Crear/verificar namespace + instalar addons ───────────────
         stage('Create Namespace') {
             steps {
                 sh '''
@@ -68,6 +67,36 @@ pipeline {
                     if [ -n "$OLD_RS" ]; then
                         kubectl delete replicaset -n $NAMESPACE $OLD_RS --ignore-not-found=true 2>/dev/null || true
                     fi
+
+                    echo "==> Instalando cert-manager si no está presente..."
+                    if ! helm status cert-manager -n cert-manager >/dev/null 2>&1; then
+                        helm repo add jetstack https://charts.jetstack.io --force-update
+                        helm install cert-manager jetstack/cert-manager \
+                            --namespace cert-manager \
+                            --create-namespace \
+                            --version v1.15.5 \
+                            --set installCRDs=true \
+                            --wait --timeout 300s
+                    else
+                        echo "==> cert-manager ya está instalado — skipping"
+                    fi
+
+                    echo "==> Instalando sealed-secrets si no está presente..."
+                    if ! helm status sealed-secrets -n kube-system >/dev/null 2>&1; then
+                        helm repo add sealed-secrets https://bitnami-labs.github.io/sealed-secrets --force-update
+                        helm install sealed-secrets sealed-secrets/sealed-secrets \
+                            --namespace kube-system \
+                            --version 2.15.4 \
+                            --wait --timeout 300s
+                    else
+                        echo "==> sealed-secrets ya está instalado — skipping"
+                    fi
+
+                    echo "==> Diagnóstico de capacidad del nodo..."
+                    kubectl describe node | grep -E "Taints:|pods:" | head -5 || true
+                    echo "==> Total pods en el cluster:"
+                    kubectl get pods -A --no-headers | wc -l
+
                     echo "==> Namespace $NAMESPACE listo"
                 '''
             }
@@ -113,7 +142,10 @@ pipeline {
         // ── Stage 5: Aplicar Sealed Secrets ─────────────────────────────────────
         stage('Apply Sealed Secrets') {
             steps {
-                sh 'kubectl apply -f k8s/secrets/sealed-secret-prod.yml'
+                sh '''
+                    kubectl apply -f k8s/secrets/sealed-secret-prod.yml
+                    echo "==> Sealed secrets aplicados"
+                '''
             }
         }
 
@@ -156,7 +188,7 @@ pipeline {
                         kubectl apply -f istio/destination-rules.yml
                         kubectl apply -f istio/virtual-services.yml
                     else
-                        echo "==> Istio no instalado (enable_istio=false) — skipping Istio configs"
+                        echo "==> Istio no instalado — skipping Istio configs"
                     fi
                 '''
             }
@@ -321,8 +353,8 @@ Jenkins build: ${env.BUILD_URL}
                     writeFile file: 'deployment-summary.txt', text: summary
                     echo summary
                     sh 'kubectl get pods -n $NAMESPACE'
-                    sh 'kubectl get hpa -n $NAMESPACE'
-                    sh 'kubectl get pdb -n $NAMESPACE'
+                    sh 'kubectl get hpa -n $NAMESPACE || true'
+                    sh 'kubectl get pdb -n $NAMESPACE || true'
                 }
                 archiveArtifacts artifacts: 'deployment-summary.txt'
             }

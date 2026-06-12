@@ -15,8 +15,8 @@ spec:
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxUnavailable: 0
-      maxSurge: 1
+      maxUnavailable: 1
+      maxSurge: 0
   selector:
     matchLabels:
       app: auth-service
@@ -57,7 +57,7 @@ spec:
           resources:
             requests:
               memory: "256Mi"
-              cpu: "200m"
+              cpu: "25m"
             limits:
               memory: "512Mi"
               cpu: "500m"
@@ -128,8 +128,8 @@ spec:
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxUnavailable: 0
-      maxSurge: 1
+      maxUnavailable: 1
+      maxSurge: 0
   selector:
     matchLabels:
       app: identity-service
@@ -170,7 +170,7 @@ spec:
           resources:
             requests:
               memory: "256Mi"
-              cpu: "200m"
+              cpu: "25m"
             limits:
               memory: "512Mi"
               cpu: "500m"
@@ -239,8 +239,8 @@ spec:
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxUnavailable: 0
-      maxSurge: 1
+      maxUnavailable: 1
+      maxSurge: 0
   selector:
     matchLabels:
       app: promotion-service
@@ -290,7 +290,7 @@ spec:
           resources:
             requests:
               memory: "256Mi"
-              cpu: "200m"
+              cpu: "25m"
             limits:
               memory: "512Mi"
               cpu: "500m"
@@ -359,8 +359,8 @@ spec:
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxUnavailable: 0
-      maxSurge: 1
+      maxUnavailable: 1
+      maxSurge: 0
   selector:
     matchLabels:
       app: gateway-service
@@ -401,7 +401,7 @@ spec:
           resources:
             requests:
               memory: "256Mi"
-              cpu: "200m"
+              cpu: "25m"
             limits:
               memory: "512Mi"
               cpu: "500m"
@@ -470,8 +470,8 @@ spec:
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxUnavailable: 0
-      maxSurge: 1
+      maxUnavailable: 1
+      maxSurge: 0
   selector:
     matchLabels:
       app: notification-service
@@ -510,7 +510,7 @@ spec:
           resources:
             requests:
               memory: "256Mi"
-              cpu: "200m"
+              cpu: "25m"
             limits:
               memory: "512Mi"
               cpu: "500m"
@@ -577,8 +577,8 @@ spec:
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxUnavailable: 0
-      maxSurge: 1
+      maxUnavailable: 1
+      maxSurge: 0
   selector:
     matchLabels:
       app: form-service
@@ -619,7 +619,7 @@ spec:
           resources:
             requests:
               memory: "256Mi"
-              cpu: "200m"
+              cpu: "25m"
             limits:
               memory: "512Mi"
               cpu: "500m"

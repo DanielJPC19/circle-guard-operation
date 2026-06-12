@@ -35,9 +35,9 @@ module "aks" {
 
 module "k8s_addons" {
   source                = "../../modules/k8s-addons"
-  enable_cert_manager   = true
+  enable_cert_manager   = false
   enable_monitoring     = false
-  enable_sealed_secrets = true
+  enable_sealed_secrets = false
   enable_elk            = false
   enable_jaeger         = false
   enable_istio          = false

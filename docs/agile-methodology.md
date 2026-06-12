@@ -44,12 +44,11 @@ exige evidencia explícita de **iteraciones completas**.
 ## 2. Gestión del trabajo: Jira y Historias de Usuario
 
 El equipo utilizó **Jira** como herramienta central de gestión ágil para organizar,
-rastrear y reportar el progreso de las **33 historias de usuario** del proyecto
-(fuente: `hus.md`).
+rastrear y reportar el progreso de las **33 historias de usuario** del proyecto.
 
 ### 2.1 Estructura de Sprints
 
-**Sprints planificados (según hus.md):**
+**Sprints en Jira (board Scrum):**
 
 | Sprint | Nombre | HU | Rango | Estado |
 |--------|--------|----|----|--------|
@@ -71,7 +70,7 @@ rastrear y reportar el progreso de las **33 historias de usuario** del proyecto
 
 **Gestión en Jira:**
 - Board Scrum con columnas: `Backlog` → `To Do` → `In Progress` → `In Review` → `Done`
-- Cada HU registrada con criterios de aceptación (enlazados desde `hus.md`)
+- Cada HU registrada en Jira con criterios de aceptación explícitos
 - Transiciones manuales en Jira al actualizar estado en commits
 
 ### 2.2 Trazabilidad: HU → Commits → Code
@@ -101,7 +100,7 @@ Una HU se marca como `Done` en Jira cuando:
 
 ### 2.4 Evidencia y Artefactos
 
-- Detalle de cada HU (criterios, estimación, tareas): `hus.md`
+- Detalle de cada HU (criterios, estimación, tareas): **Jira board (project key CG)**
 - Capturas del board de Jira (sprints, transiciones de estado, gráficas):
   referencia pendiente en `docs/img/` (para adjuntar como respaldo visual)
 
@@ -236,10 +235,10 @@ Criterios de aceptación:
 
 ## 7. Épicas del proyecto
 
-El trabajo se organizó en las siguientes épicas, agrupando las 33 historias de
+El trabajo se organizó en las siguientes épicas (en Jira), agrupando las 33 historias de
 usuario. **Nota:** Las épicas B, C, D, F, G incluyen el scaffolding inicial
 (commit squashed 0d2b24c, 2026-06-05) que consolidó US-01, US-02, US-06, US-11,
-US-12. Véase `hus.md` para el detalle de criterios de aceptación.
+US-12. Cada épica está vinculada en Jira con sus criterios de aceptación detallados.
 
 | Épica | Descripción | Estado | HU base | Sección(es) |
 |-------|-------------|--------|---------|------------|
@@ -271,7 +270,7 @@ repositorios.
 
 **Scaffolding inicial (commit squashed 0d2b24c, 2026-06-05):**
 Todas las HU siguientes están consolidadas en un único commit inicial y marcadas
-como `[DONE]` en el archivo `hus.md`:
+como `[DONE]` en el board de Jira:
 
 - **US-01:** Provisionar infraestructura multi-cloud con Terraform (Módulos: aks,
   acr, k8s-addons; Ambientes: dev, staging, prod con backend remoto)
@@ -340,7 +339,7 @@ Historias de usuario pendientes o parcialmente completadas:
 **Notas:**
 - **US-01, US-02, US-06, US-11, US-12** fueron consolidadas en el commit inicial
   squashed `0d2b24c` (2026-06-05 "feat: initial project structure"). Están marcadas
-  como `[DONE]` en `hus.md` y su evidencia incluye:
+  como `[DONE]` en el board de Jira y su evidencia incluye:
   - US-01: Terraform multi-cloud (infra/modules/, infra/envs/ con backends remotos)
   - US-02: CI develop (.github/workflows/ci-develop.yml con SonarQube + Trivy)
   - US-06: Tests unitarios 70% cobertura (build.gradle.kts + services/*/src/test/)

@@ -68,7 +68,6 @@ pipeline {
                         echo "==> Pods Terminating encontrados: $TERMINATING"
                         echo "$TERMINATING" | xargs kubectl delete pod -n $NAMESPACE \
                             --force --grace-period=0 2>/dev/null || true
-                        echo "==> Esperando 10s para que el control plane procese las eliminaciones..."
                         sleep 10
                     else
                         echo "==> No hay pods Terminating — OK"
@@ -133,7 +132,7 @@ pipeline {
                     kubectl rollout status deployment/kafka-zookeeper -n $NAMESPACE --timeout=120s
 
                     echo "==> Esperando que Kafka Broker esté listo..."
-                    kubectl rollout status deployment/kafka-broker -n $NAMESPACE --timeout=300s
+                    kubectl rollout status deployment/kafka-broker -n $NAMESPACE --timeout=180s
 
                     echo "==> Esperando que Neo4j esté listo..."
                     kubectl rollout status deployment/neo4j -n $NAMESPACE --timeout=180s
@@ -153,12 +152,22 @@ pipeline {
             }
         }
 
-        // ── Stage 5: Aplicar Sealed Secrets ─────────────────────────────────────
-        stage('Apply Sealed Secrets') {
+        // ── Stage 5: Crear Secret de aplicación ─────────────────────────────────
+        stage('Apply Secrets') {
             steps {
                 sh '''
-                    kubectl apply -f k8s/secrets/sealed-secret-prod.yml
-                    echo "==> Sealed secrets aplicados"
+                    kubectl create secret generic circleguard-secret \
+                        -n $NAMESPACE \
+                        --from-literal=POSTGRES_PASSWORD=password \
+                        --from-literal=NEO4J_PASSWORD=password \
+                        --from-literal=JWT_SECRET=circleguard-demo-jwt-secret-key-for-dev \
+                        --from-literal=QR_SECRET=circleguard-demo-qr-secret-key-prod \
+                        --from-literal=VAULT_SECRET=circleguard-demo-vault-secret-prod \
+                        --from-literal=VAULT_SALT=deadbeef \
+                        --from-literal=VAULT_HASH_SALT=circleguard-demo-vault-hash-salt \
+                        --from-literal=LDAP_MANAGER_PASSWORD=password \
+                        --dry-run=client -o yaml | kubectl apply -f -
+                    echo "==> Secret circleguard-secret aplicado"
                 '''
             }
         }
@@ -282,65 +291,7 @@ pipeline {
             }
         }
 
-        // ── Stage 11: Release Notes con secciones feat/fix/chore ─────────────────
-        stage('Generate Release Notes') {
-            steps {
-                script {
-                    def shortSha = env.IMAGE_TAG.replaceAll(/^prod-/, '')
-                    def lastTag = sh(
-                        script: "git describe --tags --abbrev=0 2>/dev/null || echo ''",
-                        returnStdout: true
-                    ).trim()
-                    def commitRange = lastTag ? "${lastTag}..HEAD" : "HEAD"
-
-                    def featCommits = sh(
-                        script: "git log ${commitRange} --oneline --grep='feat:' --format='- %h: %s' 2>/dev/null || echo ''",
-                        returnStdout: true
-                    ).trim()
-                    def fixCommits = sh(
-                        script: "git log ${commitRange} --oneline --grep='fix:' --format='- %h: %s' 2>/dev/null || echo ''",
-                        returnStdout: true
-                    ).trim()
-                    def choreCommits = sh(
-                        script: "git log ${commitRange} --oneline --grep='chore:' --format='- %h: %s' 2>/dev/null || echo ''",
-                        returnStdout: true
-                    ).trim()
-
-                    def servicesList = env.SERVICES.split(' ')
-                    def imageLines = servicesList.collect { svc ->
-                        "- ${env.ACR_REGISTRY}/circleguard/circleguard-${svc}:${params.IMAGE_TAG}"
-                    }.join('\n')
-
-                    def releaseDate = new Date().format('yyyy-MM-dd HH:mm:ss')
-                    def notes = """\
-# Release v${BUILD_NUMBER} — ${releaseDate} UTC
-
-## ✨ Nuevas Características
-${featCommits ?: '- (ninguna en este release)'}
-
-## 🐛 Correcciones de Bugs
-${fixCommits ?: '- (ninguna en este release)'}
-
-## 🔧 Mantenimiento
-${choreCommits ?: '- (ninguno en este release)'}
-
-## 📦 Servicios Desplegados
-${imageLines}
-
-## 🔗 Referencias
-- Build Jenkins: ${env.BUILD_URL}
-- Commit: ${shortSha}
-- Generado: ${releaseDate}
-"""
-                    writeFile file: 'release-notes.txt', text: notes
-                    echo "==> Release notes generadas"
-                    sh 'cat release-notes.txt'
-                }
-                archiveArtifacts artifacts: 'release-notes.txt'
-            }
-        }
-
-        // ── Stage 12: Resumen del despliegue ─────────────────────────────────────
+        // ── Stage 11: Resumen del despliegue ─────────────────────────────────────
         stage('Deployment Summary') {
             steps {
                 script {
@@ -358,7 +309,6 @@ Namespace:    ${env.NAMESPACE}
 Image tag:    ${params.IMAGE_TAG}
 Timestamp:    ${new Date().format('yyyy-MM-dd HH:mm:ss')} UTC
 Gateway URL:  http://${env.GATEWAY_IP}:8087
-Gateway HTTPS: https://api.circleguard.edu
 
 Services deployed:
 ${imageLines}
@@ -388,28 +338,6 @@ Jenkins build: ${env.BUILD_URL}
                 echo "==> Deploy a PRODUCCIÓN FALLIDO. Rollback manual:\n${rollbackCmds}"
                 echo "==> Ver logs: kubectl logs -n ${env.NAMESPACE} deployment/<servicio>"
                 echo "==> Estado actual: kubectl get pods -n ${env.NAMESPACE}"
-
-                try {
-                    withCredentials([string(credentialsId: 'slack-webhook-prod', variable: 'SLACK_WEBHOOK')]) {
-                        def slackMessage = """{
-                            "text": "Production Deployment FAILED",
-                            "blocks": [
-                                {
-                                    "type": "section",
-                                    "fields": [
-                                        {"type": "mrkdwn", "text": "*Status:*\\nFAILED - Automatic Rollback Applied"},
-                                        {"type": "mrkdwn", "text": "*Image Tag:*\\n${params.IMAGE_TAG}"},
-                                        {"type": "mrkdwn", "text": "*Environment:*\\n${params.ENVIRONMENT}"},
-                                        {"type": "mrkdwn", "text": "*Build:*\\n<${env.BUILD_URL}|Jenkins Build #${env.BUILD_NUMBER}>"}
-                                    ]
-                                }
-                            ]
-                        }"""
-                        sh """curl -s -X POST '${SLACK_WEBHOOK}' -H 'Content-Type: application/json' -d '${slackMessage}'"""
-                    }
-                } catch (e) {
-                    echo "==> Slack notification skipped: ${e.message}"
-                }
             }
         }
         always {

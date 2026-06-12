@@ -271,6 +271,12 @@ pipeline {
         stage('Deploy Services') {
             steps {
                 sh '''
+                    echo "==> Forzando replicas=1 antes del rolling update (evita conflicto con HPA)..."
+                    for SVC in $SERVICES; do
+                        kubectl scale deployment/$SVC --replicas=1 -n $NAMESPACE 2>/dev/null || true
+                    done
+                    sleep 5
+
                     echo "==> Desplegando servicios en $NAMESPACE con tag $IMAGE_TAG..."
                     kubectl apply -f $K8S_DIR/all-services.yml -n $NAMESPACE
                     kubectl apply -f $K8S_DIR/ingress.yml -n $NAMESPACE
